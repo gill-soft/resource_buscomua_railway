@@ -1,38 +1,16 @@
 package com.gillsoft.client;
 
-import java.io.Serializable;
-
-public class Response implements Serializable {
+public class Response<T> extends AbstractResponse {
 
 	private static final long serialVersionUID = -667452233707752303L;
 	
-	private String id;
-	
-	private Error error;
-	
-	private Result result;
+	private T result;
 
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public Error getError() {
-		return error;
-	}
-
-	public void setError(Error error) {
-		this.error = error;
-	}
-
-	public Result getResult() {
+	public T getResult() {
 		return result;
 	}
 
-	public void setResult(Result result) {
+	public void setResult(T result) {
 		this.result = result;
 	}
 

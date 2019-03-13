@@ -2,6 +2,7 @@ package com.gillsoft.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -14,10 +15,13 @@ import org.apache.commons.lang.time.DateUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.util.datetime.FastDateFormat;
+import org.joda.time.LocalDate;
+import org.joda.time.Years;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.MediaType;
@@ -37,6 +41,7 @@ import com.gillsoft.cache.CacheHandler;
 import com.gillsoft.cache.IOCacheException;
 import com.gillsoft.cache.RedisMemoryCache;
 import com.gillsoft.logging.RequestResponseLoggingInterceptor;
+import com.gillsoft.model.Customer;
 import com.gillsoft.model.ResponseError;
 import com.gillsoft.util.RestTemplateUtil;
 import com.gillsoft.util.StringUtil;
@@ -57,39 +62,29 @@ public class RestClient {
 	public static final FastDateFormat dateFormat = FastDateFormat.getInstance(DATE_FORMAT);
 	public static final FastDateFormat dateTimeFormat = FastDateFormat.getInstance(DATE_TIME_FORMAT);
 	
-	public static final int RESERVETION_STATUS = 0;
-	public static final int PAIED_STATUS = 1; //TODO change
-	public static final int RETURNED_STATUS = 2; //TODO change
-	public static final int CANCEL_STATUS = 4;
+	// 0–оформлений, 1–відмінений, 2–викуплений, 3–документ відмінено чи він не існує, 6–погашений, 9–використаний, 20–роздрукований
+	public static final String RESERVETION_STATUS = "0";
+	public static final String PAIED_STATUS = "2;9;20";
+	public static final String CANCEL_STATUS = "1;3;6";
 	
-//	Можливі коди статусу: 0 – резерв; 
-//	1 – сплачено (наприклад, після транзакції pay); 
-//	2 – відхилено (наприклад, після транзакції revocation);  
-//	3 – у стані купівлі; 
-//	4 – у стані відхилення замовлення; 
-//	5 – транзакція виконана з помилкою; 
-//	6 – відмінено вручну; 
-//	8 – у стані погашення; 
-//	9 – погашено (наприклад, після транзакції cancel); 
-//	10 – часткове погашення; 
-//	11 – повернення документу; 
-//	12 – в стані повернення.
-	
-	private static final String CONFIRM_CODE = "0";
 	private static final String LANG_RU = "ru";
-	private static final String SERVICE = "gd";
+	private static final int MAX_AGE = 14;
+	private static final String FULL = "full";
+	private static final String CHILD = "child";
+	private static final String TRANSACTION_TYPE = "3";
 	
 	private static final String STATIONS_LIST = "stations list";
 	private static final String TRAINS = "trains";
 	private static final String PRICES = "prices";
 	private static final String PLACES = "places";
 	private static final String ROUTE = "train_route";
-	private static final String RESERVATION = "reservation.json";
-	private static final String COMMIT = "commit.json";
-	private static final String SHOW_BOOKING = "booking_show.json";
-	private static final String CANCEL = "cancel.json";
-	private static final String GET_REFUND_AMOUNT = "get_refund_amount.json";
-	private static final String MAKE_REFUND = "make_refund.json";
+	private static final String RESERVATION = "reserve";
+	private static final String PAY = "pay";
+	private static final String STATUS_DOC = "status_doc";
+	private static final String CANCEL = "cancel";
+	private static final String REVOCATION = "revocation";
+	private static final String RETURN_DOC = "return_doc";
+	private static final String RETURN_DOC_CONFIRM = "return_doc_confirm";
 	
 	@Autowired
     @Qualifier("RedisMemoryCache")
@@ -140,7 +135,7 @@ public class RestClient {
 	public List<Country> getStations() {
 		Request request = createRequest(STATIONS_LIST);
 		try {
-			return getResult(searchTemplate, request).getResult().getCountry();
+			return getResult(searchTemplate, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult().getCountry();
 		} catch (ResponseError e) {
 			e.printStackTrace();
 			return null;
@@ -167,7 +162,7 @@ public class RestClient {
 		request.getParams().setCodeStationFrom(from);
 		request.getParams().setCodeStationTo(to);
 		request.getParams().setDate1(date);
-		return getResult(searchTemplate, request).getResult();
+		return getResult(searchTemplate, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult();
 	}
 	
 	public Train getCachedTrain(String from, String to, Date date, String trainNumber) throws ResponseError, IOCacheException {
@@ -183,7 +178,7 @@ public class RestClient {
 		request.getParams().setCodeStationTo(to);
 		request.getParams().setDate(date);
 		request.getParams().setTrain(trainNumber);
-		return getResult(searchTemplate, request).getResult().getTrain();
+		return getResult(searchTemplate, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult().getTrain();
 	}
 	
 	public Train getPlaces(String from, String to, Date date, String trainNumber, String carType, String carClass,
@@ -196,7 +191,7 @@ public class RestClient {
 		request.getParams().setWagonClass(carClass);
 		request.getParams().setWagonType(carType);
 		request.getParams().setWagonNumber(carNumber);
-		return getResult(searchTemplate, request).getResult().getTrain();
+		return getResult(searchTemplate, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult().getTrain();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -213,96 +208,103 @@ public class RestClient {
 		request.getParams().setCodeStationTo(to);
 		request.getParams().setDate(date);
 		request.getParams().setTrain(trainNumber);
-		return getResult(searchTemplate, request).getResult().getCountries();
+		return getResult(searchTemplate, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult().getCountries();
 	}
-//	
-//	public Response reservation(String sessionId, String operationType, List<Customer> customers, List<Seat> seats) throws ResponseError {
-//		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-//		params.add("key", Config.getKey());
-//		params.add("lang", LANG_RU);
-//		params.add("session_id", sessionId);
-//		List<String> passengers = new ArrayList<>(customers.size());
-//		for (Customer customer : customers) {
-//			passengers.add(String.join(":", customer.getName(), customer.getSurname(), "", ""));
-//		}
-//		params.add("passengers", String.join("|", passengers));
-//		params.add("auth_key", Config.getAuthKey());
-//		params.add("no_clothes", "1");
-//		params.add("operation_type", operationType);
-//		params.add("range", String.join(",", seats.stream().map(Seat::getId).collect(Collectors.toList())));
-//		return getResult(template, RESERVATION, params);
-//	}
-//	
-//	public Train commit(String orderId, String amount, String currency) throws ResponseError {
-//		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-//		params.add("key", Config.getKey());
-//		params.add("lang", LANG_RU);
-//		params.add("сommit_auth_key", Config.getAuthKey());
-//		params.add("signature", getSignature(orderId, amount));
-//		params.add("service", SERVICE);
-//		params.add("order_id", orderId);
-//		params.add("amount", amount);
-//		params.add("currency", currency);
-//		return getResult(template, COMMIT, params).getOrder();
-//	}
-//	
-//	private String getSignature(String orderId, String amount) {
-//		return StringUtil.md5(String.join("",
-//				Config.getShopApiKey(), SERVICE, orderId, amount, Config.getShopSecretKey()));
-//	}
-//	
-//	public Train getBooking(String reservationId) throws ResponseError {
-//		return bookingOperation(reservationId, SHOW_BOOKING);
-//	}
-//	
-//	public Train cancelBooking(String reservationId) throws ResponseError {
-//		return bookingOperation(reservationId, CANCEL);
-//	}
-//	
-//	private Train bookingOperation(String reservationId, String method) throws ResponseError {
-//		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-//		params.add("key", Config.getKey());
-//		params.add("lang", LANG_RU);
-//		params.add("auth_key", Config.getAuthKey());
-//		params.add("reservation_id", reservationId);
-//		return getResult(template, method, params).getBooking();
-//	}
-//	
-//	public Refund getRefundAmount(String reservationId, String passengerId) throws ResponseError {
-//		return refundOperation(reservationId, passengerId, GET_REFUND_AMOUNT);
-//	}
-//	
-//	public Refund refund(String reservationId, String passengerId) throws ResponseError {
-//		return refundOperation(reservationId, passengerId, MAKE_REFUND);
-//	}
-//	
-//	private Refund refundOperation(String reservationId, String passengerId, String method) throws ResponseError {
-//		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-//		params.add("key", Config.getKey());
-//		params.add("lang", LANG_RU);
-//		params.add("auth_key", Config.getAuthKey());
-//		params.add("reservation_id", reservationId);
-//		params.add("passenger_id", passengerId);
-//		return getResult(template, method, params).getRefund();
-//	}
 	
-	private Response getResult(RestTemplate template, Request request) throws ResponseError {
+	public OrderResult reservation(TripIdModel idModel, String places, List<Customer> customers) throws ResponseError {
+		Request request = createRequest(RESERVATION);
+		request.getParams().setCodeStationFrom(idModel.getFrom());
+		request.getParams().setCodeStationTo(idModel.getTo());
+		request.getParams().setDate(idModel.getDate());
+		request.getParams().setTrain(idModel.getTrain());
+		request.getParams().setWagonClass(idModel.getClas());
+		request.getParams().setWagonType(idModel.getType());
+		request.getParams().setWagonNumber(idModel.getCar());
+		request.getParams().setPlaces(places);
+		request.getParams().setDocuments(new HashMap<>());
+		List<Document> documents = new ArrayList<>();
+		int number = 1;
+		for (Customer customer : customers) {
+			Document document = new Document();
+			document.setNumber(number++);
+			document.setCountPlace(1);
+			document.setFirstname(customer.getName());
+			document.setLastname(customer.getSurname());
+			if (customer.getBirthday() != null
+					&& Years.yearsBetween(new LocalDate(idModel.getDate()), new LocalDate(customer.getBirthday())).getYears() < MAX_AGE) {
+				document.setChild(customer.getBirthday());
+				document.setKind(CHILD);
+			} else {
+				document.setKind(FULL);
+			}
+			documents.add(document);
+		}
+		request.getParams().getDocuments().put("document", documents);
+		return getResult(template, request, new ParameterizedTypeReference<Response<OrderResult>>() {}).getResult();
+	}
+	
+	public CancelResult revocation(String reserveId) throws ResponseError {
+		return cancelOperation(reserveId, REVOCATION);
+	}
+	
+	public CancelResult cancel(String reserveId) throws ResponseError {
+		return cancelOperation(reserveId, CANCEL);
+	}
+	
+	private CancelResult cancelOperation(String reserveId, String method) throws ResponseError {
+		Request request = createRequest(method);
+		request.getParams().setReserveId(reserveId);
+		return getResult(template, request, new ParameterizedTypeReference<Response<CancelResult>>() {}).getResult();
+	}
+	
+	public List<Order> pay(String reserveId) throws ResponseError {
+		Request request = createRequest(PAY);
+		request.getParams().setReserveId(reserveId);
+		request.getParams().setTransactionType(TRANSACTION_TYPE);
+		return getResult(template, request, new ParameterizedTypeReference<Response<OrderResult>>() {}).getResult().getOrder();
+	}
+	
+	public OrderDocument getDocStatus(String uid) throws ResponseError {
+		Request request = createRequest(STATUS_DOC);
+		request.getParams().setUid(uid);
+		return getResult(template, request, new ParameterizedTypeReference<Response<OrderResult>>() {}).getResult().getDocument();
+	}
+	
+	public List<Order> getReturnAmount(String uid, Document passport) throws ResponseError {
+		return returnOperation(uid, passport, RETURN_DOC);
+	}
+	
+	public List<Order> returnConfirm(String uid, Document passport) throws ResponseError {
+		return returnOperation(uid, passport, RETURN_DOC_CONFIRM);
+	}
+	
+	private List<Order> returnOperation(String uid, Document passport, String method) throws ResponseError {
+		Request request = createRequest(method);
+		request.getParams().setUid(uid);
+		request.getParams().setPassport(passport);
+		return getResult(template, request, new ParameterizedTypeReference<Response<OrderResult>>() {}).getResult().getOrder();
+	}
+	
+	private <T> Response<T> getResult(RestTemplate template, Request request,
+			ParameterizedTypeReference<Response<T>> type) throws ResponseError {
 		URI uri = UriComponentsBuilder.fromUriString(Config.getUrl()).build().toUri();
-		ResponseEntity<Response> response = null;
+		ResponseEntity<Response<T>> response = null;
 		try {
-			response = template.exchange(new RequestEntity<Request>(request, HttpMethod.POST, uri), Response.class);
+			response = template.exchange(new RequestEntity<Request>(request, HttpMethod.POST, uri), type);
 		} catch (Exception e) {
+			LOGGER.error("Error when execute request: " + uri.toString(), e);
 			throw new ResponseError(e.getMessage());
 		}
 		if (!Objects.equals(request.getId(), response.getBody().getId())) {
 			throw new ResponseError("Error. Response from other request.");
 		}
-		if (response.getBody().getResult() == null) {
-			throw new ResponseError("Error. Empty response result.");
-		}
 		// проверяем ответ на ошибку
 		if (response.getBody().getError() != null) {
-			throw new ResponseError(response.getBody().getError().getData());
+			throw new ResponseError(response.getBody().getError().getMessage()
+					+ " " + response.getBody().getError().getData());
+		}
+		if (response.getBody().getResult() == null) {
+			throw new ResponseError("Error. Empty response result.");
 		}
 		return response.getBody();
 	}
@@ -340,5 +342,5 @@ public class RestClient {
 		return ROUTE_CACHE_KEY + String.join(";",
 				String.valueOf(DateUtils.truncate(date, Calendar.DATE).getTime()), trainNumber);
 	}
-
+	
 }

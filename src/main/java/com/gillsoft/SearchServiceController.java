@@ -192,21 +192,18 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 		
 		segment.setCarriages(new ArrayList<>(wagons.size()));
 		for (Wagon wagon : wagons) {
-			
-			// продавать можно только 2 и 3
-//			if (car.getOperationTypes().contains("2")
-//					|| car.getOperationTypes().contains("3")) {
-				Carriage carriage = new Carriage();
-				id.setCar(wagon.getNumber());
-				carriage.setId(id.asString());
-				carriage.setNumber(wagon.getNumber());
-				carriage.setClas(getCarClass(wagon.getClas().getCode(), wagon.getType().getCode()));
+			Carriage carriage = new Carriage();
+			id.setCar(wagon.getNumber());
+			carriage.setId(id.asString());
+			carriage.setNumber(wagon.getNumber());
+			carriage.setClas(getCarClass(wagon.getClas().getCode(), wagon.getType().getCode()));
+			if (wagon.getPlaces() != null) {
 				carriage.setFreeLowerPlaces(wagon.getPlaces().getLower().getValue());
 				carriage.setFreeLowerSidePlaces(wagon.getPlaces().getLower().getSide());
 				carriage.setFreeTopPlaces(wagon.getPlaces().getTop().getValue());
 				carriage.setFreeTopSidePlaces(wagon.getPlaces().getTop().getSide());
-				segment.getCarriages().add(carriage);
-//			}
+			}
+			segment.getCarriages().add(carriage);
 		}
 		if (!segment.getCarriages().isEmpty()) {
 			id.setCar(first.getNumber());
@@ -227,10 +224,12 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	private int getFreeSeatsCount(List<Wagon> wagons) {
 		int count = 0;
 		for (Wagon wagon : wagons) {
-			count += wagon.getPlaces().getLower().getSide()
-					+ wagon.getPlaces().getLower().getValue()
-					+ wagon.getPlaces().getTop().getSide()
-					+ wagon.getPlaces().getTop().getValue();
+			if (wagon.getPlaces() != null) {
+				count += wagon.getPlaces().getLower().getSide()
+						+ wagon.getPlaces().getLower().getValue()
+						+ wagon.getPlaces().getTop().getSide()
+						+ wagon.getPlaces().getTop().getValue();
+			}
 		}
 		return count;
 	}
@@ -291,7 +290,9 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	}
 	
 	private Price createPrice(Wagon wagon) {
-
+		if (wagon.getCost() == null) {
+			return null;
+		}
 		// тариф
 		Tariff tariff = new Tariff();
 		tariff.setId("0");

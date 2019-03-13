@@ -2,6 +2,8 @@ package com.gillsoft.client;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -37,6 +39,23 @@ public class Params implements Serializable {
 	
 	@JsonProperty("wagon_number")
 	private String wagonNumber;
+	
+	@JsonProperty("no_bedding")
+	private String noBedding = "true";
+	
+	private String places;
+	
+	@JsonProperty("reserve_id")
+	private String reserveId;
+	
+	@JsonProperty("transaction_type")
+	private String transactionType;
+	
+	private String uid;
+	
+	private Document passport;
+	
+	private Map<String, List<Document>> documents;
 
 	public String getName() {
 		return name;
@@ -108,6 +127,62 @@ public class Params implements Serializable {
 
 	public void setWagonNumber(String wagonNumber) {
 		this.wagonNumber = wagonNumber;
+	}
+
+	public String isNoBedding() {
+		return noBedding;
+	}
+
+	public void setNoBedding(String noBedding) {
+		this.noBedding = noBedding;
+	}
+
+	public String getPlaces() {
+		return places;
+	}
+
+	public void setPlaces(String places) {
+		this.places = places;
+	}
+
+	public String getReserveId() {
+		return reserveId;
+	}
+
+	public void setReserveId(String reserveId) {
+		this.reserveId = reserveId;
+	}
+
+	public String getTransactionType() {
+		return transactionType;
+	}
+
+	public void setTransactionType(String transactionType) {
+		this.transactionType = transactionType;
+	}
+
+	public String getUid() {
+		return uid;
+	}
+
+	public void setUid(String uid) {
+		this.uid = uid;
+	}
+
+	public Document getPassport() {
+		return passport;
+	}
+
+	public void setPassport(Document passport) {
+		this.passport = passport;
+	}
+
+	public Map<String, List<Document>> getDocuments() {
+		return documents;
+	}
+
+	public void setDocuments(Map<String, List<Document>> documents) {
+		this.documents = documents;
 	}
 
 }
