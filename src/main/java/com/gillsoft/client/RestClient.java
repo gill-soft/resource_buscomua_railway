@@ -85,6 +85,7 @@ public class RestClient {
 	private static final String REVOCATION = "revocation";
 	private static final String RETURN_DOC = "return_doc";
 	private static final String RETURN_DOC_CONFIRM = "return_doc_confirm";
+	private static final String GET_RESPONSE = "get response";
 	
 	@Autowired
     @Qualifier("RedisMemoryCache")
@@ -282,6 +283,12 @@ public class RestClient {
 		Request request = createRequest(method);
 		request.getParams().setUid(uid);
 		request.getParams().setPassport(passport);
+		return getResult(template, request, new ParameterizedTypeReference<Response<OrderResult>>() {}).getResult().getOrder();
+	}
+	
+	public List<Order> getPayResponse(String reserveId) throws ResponseError {
+		Request request = createRequest(GET_RESPONSE);
+		request.getParams().setSrcId(reserveId);
 		return getResult(template, request, new ParameterizedTypeReference<Response<OrderResult>>() {}).getResult().getOrder();
 	}
 	

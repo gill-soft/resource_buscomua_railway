@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonFormat.Shape;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(Include.NON_NULL)
 public class Params implements Serializable {
@@ -51,10 +51,11 @@ public class Params implements Serializable {
 	@JsonProperty("transaction_type")
 	private String transactionType;
 	
+	@JsonProperty("src_id")
+	private String srcId;
+	
 	private String uid;
-	
 	private Document passport;
-	
 	private Map<String, List<Document>> documents;
 
 	public String getName() {
@@ -159,6 +160,18 @@ public class Params implements Serializable {
 
 	public void setTransactionType(String transactionType) {
 		this.transactionType = transactionType;
+	}
+
+	public String getNoBedding() {
+		return noBedding;
+	}
+
+	public String getSrcId() {
+		return srcId;
+	}
+
+	public void setSrcId(String srcId) {
+		this.srcId = srcId;
 	}
 
 	public String getUid() {
