@@ -54,8 +54,9 @@ public class TrainsUpdateTask extends AbstractUpdateTask {
 				max = date.getTime();
 			}
 		}
-		if (max == 0) {
-			return Config.getCacheTripTimeToLive();
+		if (max == 0
+				|| max < System.currentTimeMillis()) {
+			return Config.getCacheErrorTimeToLive();
 		}
 		return max - System.currentTimeMillis();
 	}
