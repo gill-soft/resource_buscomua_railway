@@ -141,7 +141,7 @@ public class OrderServiceController extends AbstractOrderService {
 		Price price = new Price();
 		BigDecimal total = document.getRsb() != null && document.getRsb().getCommission() != null ?
 				document.getRsb().getCommission().getTotal() : BigDecimal.ZERO;
-		BigDecimal totalVat = total.divide(new BigDecimal("6"), 2, RoundingMode.HALF_EVEN);
+		BigDecimal totalVat = total.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP);
 		for (Cost cost : costs.values()) {
 			total = total.add(cost.getCost());
 			totalVat = totalVat.add(cost.getVat());
@@ -216,7 +216,7 @@ public class OrderServiceController extends AbstractOrderService {
 			agent.setName(Lang.UA, "Agent");
 			agent.setValue(document.getRsb().getCommission().getAgent());
 			agent.setVat(document.getRsb().getCommission().getAgent()
-					.divide(new BigDecimal("6"), 2, RoundingMode.HALF_EVEN));
+					.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP));
 			agent.setVatCalcType(CalcType.IN);
 			agent.setValueCalcType(CalcType.OUT);
 			agent.setType(ValueType.FIXED);
@@ -227,7 +227,7 @@ public class OrderServiceController extends AbstractOrderService {
 			provider.setName(Lang.UA, "Provider");
 			provider.setValue(document.getRsb().getCommission().getProvider());
 			provider.setVat(document.getRsb().getCommission().getProvider()
-					.divide(new BigDecimal("6"), 2, RoundingMode.HALF_EVEN));
+					.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP));
 			provider.setVatCalcType(CalcType.IN);
 			provider.setValueCalcType(CalcType.OUT);
 			provider.setType(ValueType.FIXED);
