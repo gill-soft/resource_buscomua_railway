@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.logging.log4j.LogManager;
@@ -86,6 +87,8 @@ public class RestClient {
 	private static final String RETURN_DOC = "return_doc";
 	private static final String RETURN_DOC_CONFIRM = "return_doc_confirm";
 	private static final String GET_RESPONSE = "get response";
+	
+	private static final String RETRY_ERROR_CODE = "4214";
 	
 	@Autowired
     @Qualifier("RedisMemoryCache")
@@ -294,26 +297,39 @@ public class RestClient {
 	
 	private <T> Response<T> getResult(RestTemplate template, Request request,
 			ParameterizedTypeReference<Response<T>> type) throws ResponseError {
-		URI uri = UriComponentsBuilder.fromUriString(Config.getUrl()).build().toUri();
-		ResponseEntity<Response<T>> response = null;
-		try {
-			response = template.exchange(new RequestEntity<Request>(request, HttpMethod.POST, uri), type);
-		} catch (Exception e) {
-			LOGGER.error("Error when execute request: " + uri.toString(), e);
-			throw new ResponseError(e.getMessage());
-		}
-		if (!Objects.equals(request.getId(), response.getBody().getId())) {
-			throw new ResponseError("Error. Response from other request.");
-		}
-		// проверяем ответ на ошибку
-		if (response.getBody().getError() != null) {
-			throw new ResponseError(response.getBody().getError().getMessage()
-					+ " " + response.getBody().getError().getData());
-		}
-		if (response.getBody().getResult() == null) {
-			throw new ResponseError("Error. Empty response result.");
-		}
-		return response.getBody();
+		int tryCount = 0;
+		do {
+			URI uri = UriComponentsBuilder.fromUriString(Config.getUrl()).build().toUri();
+			ResponseEntity<Response<T>> response = null;
+			try {
+				response = template.exchange(new RequestEntity<Request>(request, HttpMethod.POST, uri), type);
+			} catch (Exception e) {
+				LOGGER.error("Error when execute request: " + uri.toString(), e);
+				throw new ResponseError(e.getMessage());
+			}
+			if (!Objects.equals(request.getId(), response.getBody().getId())) {
+				throw new ResponseError("Error. Response from other request.");
+			}
+			// проверяем ответ на ошибку
+			if (response.getBody().getError() != null) {
+				if (RETRY_ERROR_CODE.equals(response.getBody().getError().getCode())) {
+					request.setId(StringUtil.generateUUID());
+					tryCount++;
+					try {
+						Thread.sleep(new Random().nextInt(2000) + 1000l);
+					} catch (Exception e) {
+					}
+					continue;
+				}
+				throw new ResponseError(response.getBody().getError().getMessage()
+						+ " " + response.getBody().getError().getData());
+			}
+			if (response.getBody().getResult() == null) {
+				throw new ResponseError("Error. Empty response result.");
+			}
+			return response.getBody();
+		} while (tryCount < 10);
+		throw new ResponseError("Error. Can not send request.");
 	}
 	
 	private Request createRequest(String method) {

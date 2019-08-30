@@ -17,6 +17,9 @@ public class Ticket implements Serializable {
 	private String qrImage;
 	
 	private OrderDocument document;
+	
+	@JsonProperty("fiscal_info")
+	private FiscalInfo fiscalInfo;
 
 	public String getOrdernumber() {
 		return ordernumber;
@@ -48,6 +51,14 @@ public class Ticket implements Serializable {
 
 	public void setDocument(OrderDocument document) {
 		this.document = document;
+	}
+
+	public FiscalInfo getFiscalInfo() {
+		return fiscalInfo;
+	}
+
+	public void setFiscalInfo(FiscalInfo fiscalInfo) {
+		this.fiscalInfo = fiscalInfo;
 	}
 	
 }

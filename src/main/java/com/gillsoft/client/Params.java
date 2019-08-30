@@ -43,6 +43,9 @@ public class Params implements Serializable {
 	@JsonProperty("no_bedding")
 	private String noBedding = "true";
 	
+	@JsonProperty("no_electronic")
+	private String noElectronic = "false";
+	
 	private String places;
 	
 	@JsonProperty("reserve_id")
@@ -130,12 +133,20 @@ public class Params implements Serializable {
 		this.wagonNumber = wagonNumber;
 	}
 
-	public String isNoBedding() {
+	public String getNoBedding() {
 		return noBedding;
 	}
 
 	public void setNoBedding(String noBedding) {
 		this.noBedding = noBedding;
+	}
+
+	public String getNoElectronic() {
+		return noElectronic;
+	}
+
+	public void setNoElectronic(String noElectronic) {
+		this.noElectronic = noElectronic;
 	}
 
 	public String getPlaces() {
@@ -160,10 +171,6 @@ public class Params implements Serializable {
 
 	public void setTransactionType(String transactionType) {
 		this.transactionType = transactionType;
-	}
-
-	public String getNoBedding() {
-		return noBedding;
 	}
 
 	public String getSrcId() {

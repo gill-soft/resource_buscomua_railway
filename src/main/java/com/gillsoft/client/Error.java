@@ -9,6 +9,7 @@ public class Error implements Serializable {
 	private String id;
 	private String data;
 	private String message;
+	private String code;
 
 	public String getId() {
 		return id;
@@ -32,6 +33,14 @@ public class Error implements Serializable {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
 	}
 
 }

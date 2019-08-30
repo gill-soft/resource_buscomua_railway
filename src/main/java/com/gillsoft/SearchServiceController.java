@@ -192,21 +192,13 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 		
 		segment.setCarriages(new ArrayList<>(wagons.size()));
 		for (Wagon wagon : wagons) {
-			Carriage carriage = new Carriage();
+			Carriage carriage = createCarriage(wagon);
 			id.setCar(wagon.getNumber());
 			carriage.setId(id.asString());
-			carriage.setNumber(wagon.getNumber());
-			carriage.setClas(getCarClass(wagon.getClas().getCode(), wagon.getType().getCode()));
-			if (wagon.getPlaces() != null) {
-				carriage.setFreeLowerPlaces(wagon.getPlaces().getLower().getValue());
-				carriage.setFreeLowerSidePlaces(wagon.getPlaces().getLower().getSide());
-				carriage.setFreeTopPlaces(wagon.getPlaces().getTop().getValue());
-				carriage.setFreeTopSidePlaces(wagon.getPlaces().getTop().getSide());
-			}
 			segment.getCarriages().add(carriage);
 		}
 		if (!segment.getCarriages().isEmpty()) {
-			id.setCar(first.getNumber());
+			id.setCar(null);
 			String key = id.asString();
 			segments.put(key, segment);
 			
@@ -221,6 +213,20 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 		}
 		return null;
 	}
+	
+	public Carriage createCarriage(Wagon wagon) {
+		Carriage carriage = new Carriage();
+		carriage.setNumber(wagon.getNumber());
+		carriage.setClas(getCarClass(wagon.getClas().getCode(), wagon.getType().getCode()));
+		if (wagon.getPlaces() != null) {
+			carriage.setFreeLowerPlaces(wagon.getPlaces().getLower().getValue());
+			carriage.setFreeLowerSidePlaces(wagon.getPlaces().getLower().getSide());
+			carriage.setFreeTopPlaces(wagon.getPlaces().getTop().getValue());
+			carriage.setFreeTopSidePlaces(wagon.getPlaces().getTop().getSide());
+		}
+		return carriage;
+	}
+	
 	private int getFreeSeatsCount(List<Wagon> wagons) {
 		int count = 0;
 		for (Wagon wagon : wagons) {

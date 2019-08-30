@@ -19,15 +19,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gillsoft.abstract_rest_service.AbstractOrderService;
+import com.gillsoft.client.Company;
 import com.gillsoft.client.Cost;
+import com.gillsoft.client.Order;
 import com.gillsoft.client.OrderDocument;
 import com.gillsoft.client.OrderIdModel;
 import com.gillsoft.client.OrderResult;
 import com.gillsoft.client.RestClient;
+import com.gillsoft.client.Ticket;
 import com.gillsoft.client.Train;
 import com.gillsoft.client.TripIdModel;
 import com.gillsoft.client.Wagon;
 import com.gillsoft.model.CalcType;
+import com.gillsoft.model.Carriage;
 import com.gillsoft.model.Commission;
 import com.gillsoft.model.Currency;
 import com.gillsoft.model.Customer;
@@ -86,9 +90,13 @@ public class OrderServiceController extends AbstractOrderService {
 				// получаем поезд и вагон
 				Train train = result.createTrain();
 				Wagon wagon = result.createWagon();
-				segments.put(params[0], segments.remove(search.addSegment(
-						vehicles, localities, organisations, segments, train, Collections.singletonList(wagon))));
-				Segment segment = new Segment(params[0]);
+				Carriage carriage = search.createCarriage(wagon);
+				carriage.setNumber(wagon.getNumber() + " " + wagon.getType().getCode()
+						+ (wagon.getClas().getCode() != null ? (" - " + wagon.getClas().getCode()) : ""));
+				carriage.setId(idModel.asString());
+				
+				String segmentId = search.addSegment(vehicles, localities, organisations, segments, train, Collections.singletonList(wagon));
+				Segment segment = new Segment(segmentId);
 				
 				// создаем ид заказов
 				List<String> serviceIds = new ArrayList<>(order.getValue().size());
@@ -98,15 +106,20 @@ public class OrderServiceController extends AbstractOrderService {
 					Customer customer = request.getCustomers().get(item.getCustomer().getId());
 					try {
 						OrderDocument document = getDocument(result.getDocuments(), customer);
-						
+						addInsurance(organisations, segments.get(segmentId), document.getInsurance());
 						serviceIds.add(document.getUid());
 						
 						item.setId(document.getUid());
+						item.setAdditionals(new HashMap<>(1));
+						item.getAdditionals().put("uid", document.getUid());
 						item.setNumber(result.isElectronic() ? document.getOrdernumber() : result.getOrdernumber());
 						item.setExpire(getExpiredDate(result));
 						
 						// рейс
 						item.setSegment(segment);
+						
+						// вагон
+						item.setCarriage(carriage);
 						
 						// стоимость
 						item.setPrice(createPrice(document));
@@ -136,6 +149,17 @@ public class OrderServiceController extends AbstractOrderService {
 		return response;
 	}
 	
+	private void addInsurance(Map<String, Organisation> organisations, Segment segment, Company insurance) {
+		if (insurance != null) {
+			Organisation organisation = new Organisation();
+			organisation.setName(Lang.UA, insurance.getName());
+			organisation.setAddress(Lang.UA, insurance.getAddress());
+			organisation.setPhones(Collections.singletonList(insurance.getTelephone()));
+			organisations.putIfAbsent(StringUtil.md5(insurance.getName()), organisation);
+			segment.setInsurance(new Organisation(StringUtil.md5(insurance.getName())));
+		}
+	}
+	
 	private Price createPrice(OrderDocument document) {
 		Map<String, Cost> costs = document.getCosts();
 		Price price = new Price();
@@ -158,7 +182,7 @@ public class OrderServiceController extends AbstractOrderService {
 		tariff.setValue(main.getCarrier().subtract(main.getCommission())
 				.subtract(main.getCommissionVat()).subtract(main.getInsurance()));
 		tariff.setVat(main.getCarrierVat().subtract(main.getCommissionVat()));
-		tariff.setId("0");
+		tariff.setId(document.getDetail().getKind());
 		price.setTariff(tariff);
 		
 		price.setCommissions(new ArrayList<>());
@@ -287,7 +311,9 @@ public class OrderServiceController extends AbstractOrderService {
 	private Map<String, List<ServiceItem>> getTripItems(OrderRequest request) {
 		Map<String, List<ServiceItem>> trips = new HashMap<>();
 		for (ServiceItem item : request.getServices()) {
-			String tripId = item.getSegment().getId();
+			
+			// добавляем номер вагона в ид рейса
+			String tripId = item.getCarriage().getId();
 			List<ServiceItem> items = trips.get(tripId);
 			if (items == null) {
 				items = new ArrayList<>();
@@ -339,10 +365,38 @@ public class OrderServiceController extends AbstractOrderService {
 	public OrderResponse confirmResponse(String orderId) {
 		return confirmOperation(orderId, (id, document) -> {
 			if (RestClient.RESERVETION_STATUS.contains(document.getStatus())) {
-				client.pay(id);
+				List<Order> orders = client.pay(id);
+				List<ServiceItem> items = new ArrayList<>();
+				for (Order order : orders) {
+					List<Ticket> tickets = null;
+					if (order.isElectronic()) {
+						tickets = order.getDocuments();
+					} else {
+						tickets = order.getTicket();
+					}
+					for (Ticket ticket : tickets) {
+						ServiceItem item = new ServiceItem();
+						item.setConfirmed(true);
+						item.setId(ticket.getDocument().getUid());
+						item.setAdditionals(new HashMap<>());
+						item.getAdditionals().put("text", ticket.getDocument().getText());
+						item.getAdditionals().put("barcode", order.getBarcodeImage());
+						item.getAdditionals().put("electronic", String.valueOf(order.isElectronic()));
+						if (order.isElectronic()) {
+							item.getAdditionals().put("qr", ticket.getQrImage());
+							item.getAdditionals().put("fiscal_rro", ticket.getFiscalInfo().getRro());
+							item.getAdditionals().put("fiscal_server", ticket.getFiscalInfo().getServer());
+							item.getAdditionals().put("fiscal_id", ticket.getFiscalInfo().getId());
+							item.getAdditionals().put("fiscal_tin", ticket.getFiscalInfo().getTin());
+						}
+						items.add(item);
+					}
+				}
+				return items;
 			} else if (!RestClient.PAIED_STATUS.contains(document.getStatus())) {
 				throw new ResponseError("Can not pay service. Pay applied only to reserved services.");
 			}
+			return null;
 		});
 	}
 
@@ -356,6 +410,7 @@ public class OrderServiceController extends AbstractOrderService {
 			} else if (!RestClient.CANCEL_STATUS.contains(document.getStatus())) {
 				throw new ResponseError("Can not cancel service. Cancel applied only to reserved or paied services.");
 			}
+			return null;
 		});
 	}
 	
@@ -377,21 +432,24 @@ public class OrderServiceController extends AbstractOrderService {
 				OrderDocument document = client.getDocStatus(entry.getValue().get(0));
 					
 				// выполняем подтверждение
-				operation.confirm(entry.getKey(), document);
-				
-				for (String id : entry.getValue()) {
-					addServiceItems(resultItems, id, true, null);
+				List<ServiceItem> confirmedItems = operation.confirm(entry.getKey(), document);
+				if (confirmedItems != null) {
+					resultItems.addAll(confirmedItems);
+				} else {
+					for (String id : entry.getValue()) {
+						addServiceItem(resultItems, id, true, null);
+					}
 				}
 			} catch (ResponseError e) {
 				for (String id : entry.getValue()) {
-					addServiceItems(resultItems, id, false, new RestError(e.getMessage()));
+					addServiceItem(resultItems, id, false, new RestError(e.getMessage()));
 				}
 			}
 		}
 		return response;
 	}
 	
-	private void addServiceItems(List<ServiceItem> resultItems, String ticket, boolean confirmed,
+	private void addServiceItem(List<ServiceItem> resultItems, String ticket, boolean confirmed,
 			RestError error) {
 		ServiceItem serviceItem = new ServiceItem();
 		serviceItem.setId(ticket);
@@ -418,7 +476,7 @@ public class OrderServiceController extends AbstractOrderService {
 	
 	private interface ConfirmOperation {
 		
-		public void confirm(String id, OrderDocument document) throws ResponseError;
+		public List<ServiceItem> confirm(String id, OrderDocument document) throws ResponseError;
 		
 	}
 
