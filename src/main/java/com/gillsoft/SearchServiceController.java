@@ -348,7 +348,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	public SeatsScheme getSeatsSchemeResponse(String tripId) {
 		Wagon wagon = getWagon(tripId);
 		String code = wagon.getType().getCode();
-		return schemaController.getScheme(getScheme(wagon), "С".equals(code) ? wagon.getClas().getCode() : null);
+		return schemaController.getScheme(getScheme(wagon), "С".equals(code) ? getCarCode(code) : null);
 	}
 	
 	private String getScheme(Wagon wagon) {
@@ -394,7 +394,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	public List<Seat> getSeatsResponse(String tripId) {
 		Wagon wagon = getWagon(tripId);
 		String code = wagon.getType().getCode();
-		Map<String, SeatType> types = schemaController.getCarriageSeats(getScheme(wagon), "С".equals(code) ? wagon.getClas().getCode() : null);
+		Map<String, SeatType> types = schemaController.getCarriageSeats(getScheme(wagon), "С".equals(code) ? getCarCode(code) : null);
 		
 		List<Seat> newSeats = new ArrayList<>();
 		
