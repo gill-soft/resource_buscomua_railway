@@ -194,7 +194,7 @@ public class RestClient {
 		} catch (ResponseError e) {
 			throw e;
 		} catch (IOCacheException e) {
-			params.put(RedisMemoryCache.TIME_TO_LIVE, 30000);
+			params.put(RedisMemoryCache.TIME_TO_LIVE, 30000l);
 			Train train = getPlaces(from, to, date, trainNumber, carType, carClass, carNumber);
 			try {
 				cache.write(train, params);
