@@ -348,14 +348,14 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	public SeatsScheme getSeatsSchemeResponse(String tripId) {
 		Wagon wagon = getWagon(tripId);
 		String code = wagon.getType().getCode();
-		return schemaController.getScheme(getScheme(wagon), "C".equals(code) ? wagon.getClas().getCode() : null);
+		return schemaController.getScheme(getScheme(wagon), "С".equals(code) ? wagon.getClas().getCode() : null);
 	}
 	
 	private String getScheme(Wagon wagon) {
 		String code = wagon.getType().getCode();
 		
 		// сидячий вагон анализируем дополнительно
-		return "C".equals(code) ?
+		return "С".equals(code) ?
 				(wagon.getClas().getCode() + "_" + wagon.getSubtype()) :
 					(getCarCode(code) + "_" + wagon.getSubtype());
 	}
@@ -394,11 +394,12 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	public List<Seat> getSeatsResponse(String tripId) {
 		Wagon wagon = getWagon(tripId);
 		String code = wagon.getType().getCode();
-		Map<String, SeatType> types = schemaController.getCarriageSeats(getScheme(wagon), "C".equals(code) ? wagon.getClas().getCode() : null);
+		Map<String, SeatType> types = schemaController.getCarriageSeats(getScheme(wagon), "С".equals(code) ? wagon.getClas().getCode() : null);
 		
 		List<Seat> newSeats = new ArrayList<>();
 		
-		List<String> seats = Arrays.asList(wagon.getSeats().split(","));
+		List<String> seats = Arrays.asList(wagon.getSeats().split(",")).stream()
+				.map(s -> s.replaceFirst("^0+", "")).collect(Collectors.toList());
 		if (types != null) {
 			for (Entry<String, SeatType> entry : types.entrySet()) {
 				Seat newSeat = new Seat();
