@@ -17,6 +17,7 @@ public class Wagon implements Serializable {
 	private Value type;
 	private Value railway;
 	private String charline;
+	private String subtype;
 	
 	@JsonProperty("class")
 	private Value clas;
@@ -99,6 +100,14 @@ public class Wagon implements Serializable {
 
 	public void setClas(Value clas) {
 		this.clas = clas;
+	}
+
+	public String getSubtype() {
+		return subtype;
+	}
+
+	public void setSubtype(String subtype) {
+		this.subtype = subtype;
 	}
 	
 }

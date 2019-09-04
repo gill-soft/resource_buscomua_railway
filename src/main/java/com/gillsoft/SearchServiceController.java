@@ -1,9 +1,11 @@
 package com.gillsoft;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -58,6 +60,9 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	@Autowired
 	@Qualifier("MemoryCacheHandler")
 	private CacheHandler cache;
+	
+	@Autowired
+	private SeatsSchemeController schemaController;
 
 	@Override
 	public TripSearchResponse initSearchResponse(TripSearchRequest request) {
@@ -341,18 +346,75 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 
 	@Override
 	public SeatsScheme getSeatsSchemeResponse(String tripId) {
-		// TODO Auto-generated method stub
-		return null;
+		Wagon wagon = getWagon(tripId);
+		String code = wagon.getType().getCode();
+		return schemaController.getScheme(getScheme(wagon), "C".equals(code) ? wagon.getClas().getCode() : null);
 	}
-
-	@Override
-	public List<Seat> getSeatsResponse(String tripId) {
+	
+	private String getScheme(Wagon wagon) {
+		String code = wagon.getType().getCode();
+		
+		// сидячий вагон анализируем дополнительно
+		return "C".equals(code) ?
+				(wagon.getClas().getCode() + "_" + wagon.getSubtype()) :
+					(getCarCode(code) + "_" + wagon.getSubtype());
+	}
+	
+	private Wagon getWagon(String tripId) {
 		try {
 			TripIdModel idModel = new TripIdModel().create(tripId);
-			Train train = client.getPlaces(idModel.getFrom(), idModel.getTo(), idModel.getDate(), idModel.getTrain(),
+			Train train = client.getCachedPlaces(idModel.getFrom(), idModel.getTo(), idModel.getDate(), idModel.getTrain(),
 					idModel.getType(), idModel.getClas(), idModel.getCar());
-			List<Seat> newSeats = new ArrayList<>();
-			String[] seats = train.getWagons().get(0).getSeats().split(",");
+			return train.getWagons().get(0);
+		} catch (ResponseError e) {
+			throw new RestClientException(e.getMessage());
+		}
+	}
+	
+	private String getCarCode(String type) {
+		switch (type) {
+		case "Л":
+			return "1";
+		case "К":
+			return "2";
+		case "П":
+			return "3";
+		case "С":
+			return "4";
+		case "О":
+			return "5";
+		case "М":
+			return "6";
+		default:
+			return "";
+		}
+	}
+	
+	@Override
+	public List<Seat> getSeatsResponse(String tripId) {
+		Wagon wagon = getWagon(tripId);
+		String code = wagon.getType().getCode();
+		Map<String, SeatType> types = schemaController.getCarriageSeats(getScheme(wagon), "C".equals(code) ? wagon.getClas().getCode() : null);
+		
+		List<Seat> newSeats = new ArrayList<>();
+		
+		List<String> seats = Arrays.asList(wagon.getSeats().split(","));
+		if (types != null) {
+			for (Entry<String, SeatType> entry : types.entrySet()) {
+				Seat newSeat = new Seat();
+				newSeat.setType(entry.getValue());
+				newSeat.setId(entry.getKey());
+				newSeat.setNumber(entry.getKey());
+				if (SeatType.SEAT == entry.getValue()) {
+					if (seats.contains(entry.getKey())) {
+						newSeat.setStatus(SeatStatus.FREE);
+					} else {
+						newSeat.setStatus(SeatStatus.SALED);
+					}
+				}
+				newSeats.add(newSeat);
+			}
+		} else {
 			for (String seat : seats) {
 				Seat newSeat = new Seat();
 				newSeat.setType(SeatType.SEAT);
@@ -361,10 +423,8 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 				newSeat.setStatus(SeatStatus.FREE);
 				newSeats.add(newSeat);
 			}
-			return newSeats;
-		} catch (ResponseError e) {
-			throw new RestClientException(e.getMessage());
 		}
+		return newSeats;
 	}
 
 	@Override

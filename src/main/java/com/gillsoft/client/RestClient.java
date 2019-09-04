@@ -185,6 +185,25 @@ public class RestClient {
 		return getResult(searchTemplate, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult().getTrain();
 	}
 	
+	public Train getCachedPlaces(String from, String to, Date date, String trainNumber, String carType, String carClass,
+			String carNumber) throws ResponseError {
+		Map<String, Object> params = new HashMap<>();
+		params.put(RedisMemoryCache.OBJECT_NAME, getPlacesCacheKey(from, to, date, trainNumber, carType, carClass, carNumber));
+		try {
+			return (Train) checkCache(cache.read(params));
+		} catch (ResponseError e) {
+			throw e;
+		} catch (IOCacheException e) {
+			params.put(RedisMemoryCache.TIME_TO_LIVE, 30000);
+			Train train = getPlaces(from, to, date, trainNumber, carType, carClass, carNumber);
+			try {
+				cache.write(train, params);
+			} catch (IOCacheException ex) {
+			}
+			return train;
+		}
+	}
+	
 	public Train getPlaces(String from, String to, Date date, String trainNumber, String carType, String carClass,
 			String carNumber) throws ResponseError {
 		Request request = createRequest(PLACES);
@@ -359,6 +378,12 @@ public class RestClient {
 	public static String getTrainCacheKey(String from, String to, Date date, String trainNumber) {
 		return TRAIN_CACHE_KEY + String.join(";",
 				String.valueOf(DateUtils.truncate(date, Calendar.DATE).getTime()), from, to, trainNumber);
+	}
+	
+	public static String getPlacesCacheKey(String from, String to, Date date, String trainNumber, String carType,
+			String carClass, String carNumber) {
+		return TRAIN_CACHE_KEY + String.join(";",
+				String.valueOf(DateUtils.truncate(date, Calendar.DATE).getTime()), from, to, trainNumber, carType, carClass, carNumber);
 	}
 	
 	public static String getRouteCacheKey(Date date, String trainNumber) {
