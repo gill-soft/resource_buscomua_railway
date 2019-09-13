@@ -374,11 +374,6 @@ public class OrderServiceController extends AbstractOrderService {
 	public OrderResponse bookingResponse(String orderId) {
 		throw RestClient.createUnavailableMethod();
 	}
-	
-	public static void main(String[] args) {
-		System.out.println(String.format("ТАР(%.2f) + КЗБ(%.2f) + ПДВ(%.2f) + СТР(%.2f)",
-				BigDecimal.TEN, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.ZERO));
-	}
 
 	@Override
 	public OrderResponse confirmResponse(String orderId) {
@@ -546,8 +541,7 @@ public class OrderServiceController extends AbstractOrderService {
 
 	@Override
 	public OrderResponse getPdfDocumentsResponse(OrderRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+		throw RestClient.createUnavailableMethod();
 	}
 	
 	private interface ConfirmOperation {
