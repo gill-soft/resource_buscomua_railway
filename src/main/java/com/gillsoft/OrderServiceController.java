@@ -25,6 +25,7 @@ import com.gillsoft.client.Order;
 import com.gillsoft.client.OrderDocument;
 import com.gillsoft.client.OrderIdModel;
 import com.gillsoft.client.OrderResult;
+import com.gillsoft.client.OrderTrain;
 import com.gillsoft.client.RestClient;
 import com.gillsoft.client.Ticket;
 import com.gillsoft.client.Train;
@@ -181,7 +182,7 @@ public class OrderServiceController extends AbstractOrderService {
 		Tariff tariff = new Tariff();
 		tariff.setValue(main.getCarrier().subtract(main.getCommission())
 				.subtract(main.getCommissionVat()).subtract(main.getInsurance()));
-		tariff.setVat(main.getCarrierVat().subtract(main.getCommissionVat()));
+		tariff.setVat(main.getCarrierVat());
 		tariff.setId(document.getDetail().getKind());
 		price.setTariff(tariff);
 		
@@ -200,13 +201,26 @@ public class OrderServiceController extends AbstractOrderService {
 		Commission ksb = new Commission();
 		ksb.setCode("КЗБ");
 		ksb.setName(Lang.UA, "Касовий збір");
-		ksb.setValue(main.getCommission());
+		ksb.setValue(main.getCommission().add(main.getCommissionVat()));
 		ksb.setVat(main.getCommissionVat());
-		ksb.setVatCalcType(CalcType.OUT);
+		ksb.setVatCalcType(CalcType.IN);
 		ksb.setValueCalcType(CalcType.OUT);
 		ksb.setType(ValueType.FIXED);
 		price.getCommissions().add(ksb);
 		
+		if (main.getFee() != null) {
+			
+			// дополнительный сбор
+			Commission sb = new Commission();
+			sb.setCode("ЗБ");
+			sb.setName(Lang.UA, "Збір");
+			sb.setValue(main.getFee().add(main.getFeeVat()));
+			sb.setVat(main.getFeeVat());
+			sb.setVatCalcType(CalcType.IN);
+			sb.setValueCalcType(CalcType.OUT);
+			sb.setType(ValueType.FIXED);
+			price.getCommissions().add(sb);
+		}
 		// сервисный сбор
 		if (costs.containsKey("1")) {
 			Cost serv = costs.get("1");
@@ -360,6 +374,11 @@ public class OrderServiceController extends AbstractOrderService {
 	public OrderResponse bookingResponse(String orderId) {
 		throw RestClient.createUnavailableMethod();
 	}
+	
+	public static void main(String[] args) {
+		System.out.println(String.format("ТАР(%.2f) + КЗБ(%.2f) + ПДВ(%.2f) + СТР(%.2f)",
+				BigDecimal.TEN, BigDecimal.ONE, BigDecimal.TEN, BigDecimal.ZERO));
+	}
 
 	@Override
 	public OrderResponse confirmResponse(String orderId) {
@@ -367,6 +386,7 @@ public class OrderServiceController extends AbstractOrderService {
 			if (RestClient.RESERVETION_STATUS.contains(document.getStatus())) {
 				List<Order> orders = client.pay(id);
 				List<ServiceItem> items = new ArrayList<>();
+				BigDecimal total = BigDecimal.ZERO;
 				for (Order order : orders) {
 					List<Ticket> tickets = null;
 					if (order.isElectronic()) {
@@ -379,7 +399,20 @@ public class OrderServiceController extends AbstractOrderService {
 						item.setConfirmed(true);
 						item.setId(ticket.getDocument().getUid());
 						item.setAdditionals(new HashMap<>());
+						Cost main = ticket.getDocument().getCosts().get("0");
+						total = total.add(main.getCarrier());
+						item.getAdditionals().put("cost", String.format("%.2f", main.getCarrier()));
+						item.getAdditionals().put("cost_desc", String.format("ТАР(%.2f) + КЗБ(%.2f) + ПДВ(%.2f) + СТР(%.2f)",
+								main.getCarrier().subtract(main.getCommission()).subtract(main.getCommissionVat())
+								.subtract(main.getInsurance()).subtract(main.getCarrierVat()),
+						main.getCommission(), main.getCarrierVat().add(main.getCommissionVat()), main.getInsurance()));
+						item.getAdditionals().put("terminal", ticket.getDocument().getTransaction().getTerminal());
 						item.getAdditionals().put("text", ticket.getDocument().getText());
+						item.getAdditionals().put("train", getTrainNumber(ticket.getDocument().getDetail().getTrain()));
+						item.getAdditionals().put("from_code", ticket.getDocument().getDetail().getStationFrom().getCode());
+						item.getAdditionals().put("from_name", ticket.getDocument().getDetail().getStationFrom().getValue());
+						item.getAdditionals().put("to_code", ticket.getDocument().getDetail().getStationTo().getCode());
+						item.getAdditionals().put("to_name", ticket.getDocument().getDetail().getStationTo().getValue());
 						item.getAdditionals().put("barcode", order.getBarcodeImage());
 						item.getAdditionals().put("electronic", String.valueOf(order.isElectronic()));
 						if (order.isElectronic()) {
@@ -392,12 +425,55 @@ public class OrderServiceController extends AbstractOrderService {
 						items.add(item);
 					}
 				}
+				for (ServiceItem item : items) {
+					item.getAdditionals().put("total", String.format("%.2f", total));
+				}
 				return items;
 			} else if (!RestClient.PAIED_STATUS.contains(document.getStatus())) {
 				throw new ResponseError("Can not pay service. Pay applied only to reserved services.");
 			}
 			return null;
 		});
+	}
+	
+	private String getTrainNumber(OrderTrain train) {
+		String number = train.getValue();
+		switch (train.getClas()) {
+		case "4":
+			number += " ФІРМ";
+			break;
+		case "8":
+			number += " ЕПК";
+			break;
+		default:
+			break;
+		}
+		switch (train.getCategory()) {
+		case "1":
+			number += " ІС+";
+			break;
+		case "2":
+			number += " ІС";
+			break;
+		case "3":
+			number += " РЕ";
+			break;
+		case "4":
+			number += " Р";
+			break;
+		case "5":
+			number += " НЕ";
+			break;
+		case "6":
+			number += " НШ";
+			break;
+		case "7":
+			number += " НП";
+			break;
+		default:
+			break;
+		}
+		return number;
 	}
 
 	@Override

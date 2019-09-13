@@ -16,6 +16,7 @@ public class OrderDocument implements Serializable {
 	private String status;
 	private String text;
 	private String sysnumber;
+	private Transaction transaction; 
 
 	@JsonProperty("insurance_company")
 	private Company insurance;
@@ -73,6 +74,14 @@ public class OrderDocument implements Serializable {
 
 	public void setSysnumber(String sysnumber) {
 		this.sysnumber = sysnumber;
+	}
+
+	public Transaction getTransaction() {
+		return transaction;
+	}
+
+	public void setTransaction(Transaction transaction) {
+		this.transaction = transaction;
 	}
 
 	public Company getInsurance() {
