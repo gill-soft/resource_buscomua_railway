@@ -179,7 +179,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	public String addSegment(Map<String, Vehicle> vehicles, Map<String, Locality> localities,
 			Map<String, Organisation> organisations, Map<String, Segment> segments, Train train, List<Wagon> wagons) {
 		Segment segment = new Segment();
-		segment.setNumber(train.getNumber());
+		segment.setNumber(getTrainNumber(train.getNumber() + wagons.get(0).getCharline(), train.getClas().getCode(), train.getCategory()));
 		segment.setDepartureDate(train.getDepartureDate());
 		segment.setArrivalDate(train.getArrivalDate());
 		segment.setFreeSeatsCount(getFreeSeatsCount(wagons));
@@ -217,6 +217,45 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 			return key;
 		}
 		return null;
+	}
+	
+	public String getTrainNumber(String number, String clas, String category) {
+		switch (clas) {
+		case "4":
+			number += " ФІРМ";
+			break;
+		case "8":
+			number += " ЕПК";
+			break;
+		default:
+			break;
+		}
+		switch (category) {
+		case "1":
+			number += " ІС+";
+			break;
+		case "2":
+			number += " ІС";
+			break;
+		case "3":
+			number += " РЕ";
+			break;
+		case "4":
+			number += " Р";
+			break;
+		case "5":
+			number += " НЕ";
+			break;
+		case "6":
+			number += " НШ";
+			break;
+		case "7":
+			number += " НП";
+			break;
+		default:
+			break;
+		}
+		return number;
 	}
 	
 	public Carriage createCarriage(Wagon wagon) {

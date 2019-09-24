@@ -30,6 +30,17 @@ public class Cost implements Serializable {
 
 	private BigDecimal ticket;
 	private BigDecimal commission;
+	
+	@JsonProperty("com_service")
+	private BigDecimal comService;
+	
+	private BigDecimal service;
+	
+	@JsonProperty("add_ticket")
+	private BigDecimal addTicket;
+	
+	@JsonProperty("add_reserved_seat")
+	private BigDecimal addReservedSeat;
 
 	public BigDecimal getCost() {
 		return cost;
@@ -117,6 +128,38 @@ public class Cost implements Serializable {
 
 	public void setCommission(BigDecimal commission) {
 		this.commission = commission;
+	}
+
+	public BigDecimal getComService() {
+		return comService;
+	}
+
+	public void setComService(BigDecimal comService) {
+		this.comService = comService;
+	}
+
+	public BigDecimal getService() {
+		return service;
+	}
+
+	public void setService(BigDecimal service) {
+		this.service = service;
+	}
+
+	public BigDecimal getAddTicket() {
+		return addTicket;
+	}
+
+	public void setAddTicket(BigDecimal addTicket) {
+		this.addTicket = addTicket;
+	}
+
+	public BigDecimal getAddReservedSeat() {
+		return addReservedSeat;
+	}
+
+	public void setAddReservedSeat(BigDecimal addReservedSeat) {
+		this.addReservedSeat = addReservedSeat;
 	}
 
 }

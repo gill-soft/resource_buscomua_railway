@@ -41,7 +41,7 @@ public class Params implements Serializable {
 	private String wagonNumber;
 	
 	@JsonProperty("no_bedding")
-	private String noBedding = "true";
+	private String noBedding = "false";
 	
 	@JsonProperty("no_electronic")
 	private String noElectronic = "false";

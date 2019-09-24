@@ -93,7 +93,7 @@ public class OrderServiceController extends AbstractOrderService {
 				Wagon wagon = result.createWagon();
 				Carriage carriage = search.createCarriage(wagon);
 				carriage.setNumber(wagon.getNumber() + " " + wagon.getType().getCode()
-						+ (wagon.getClas().getCode() != null ? (" - " + wagon.getClas().getCode()) : ""));
+						+ (wagon.getClas().getCode() != null ? ("/" + wagon.getClas().getCode() + " КЛ") : ""));
 				carriage.setId(idModel.asString());
 				
 				String segmentId = search.addSegment(vehicles, localities, organisations, segments, train, Collections.singletonList(wagon));
@@ -211,15 +211,8 @@ public class OrderServiceController extends AbstractOrderService {
 		if (main.getFee() != null) {
 			
 			// дополнительный сбор
-			Commission sb = new Commission();
-			sb.setCode("ЗБ");
-			sb.setName(Lang.UA, "Збір");
-			sb.setValue(main.getFee().add(main.getFeeVat()));
-			sb.setVat(main.getFeeVat());
-			sb.setVatCalcType(CalcType.IN);
-			sb.setValueCalcType(CalcType.OUT);
-			sb.setType(ValueType.FIXED);
-			price.getCommissions().add(sb);
+			ksb.setValue(ksb.getValue().add(main.getFee().add(main.getFeeVat())));
+			ksb.setVat(ksb.getVat().add(main.getFeeVat()));
 		}
 		// сервисный сбор
 		if (costs.containsKey("1")) {
@@ -395,15 +388,14 @@ public class OrderServiceController extends AbstractOrderService {
 						item.setId(ticket.getDocument().getUid());
 						item.setAdditionals(new HashMap<>());
 						Cost main = ticket.getDocument().getCosts().get("0");
-						total = total.add(main.getCarrier());
-						item.getAdditionals().put("cost", String.format("%.2f", main.getCarrier()));
-						item.getAdditionals().put("cost_desc", String.format("ТАР(%.2f) + КЗБ(%.2f) + ПДВ(%.2f) + СТР(%.2f)",
-								main.getCarrier().subtract(main.getCommission()).subtract(main.getCommissionVat())
-								.subtract(main.getInsurance()).subtract(main.getCarrierVat()),
-						main.getCommission(), main.getCarrierVat().add(main.getCommissionVat()), main.getInsurance()));
+						total = total.add(main.getCost());
+						item.getAdditionals().put("cost", String.format("%.2f", main.getCost()));
+						item.getAdditionals().put("cost_desc", getCostDescription(main));
 						item.getAdditionals().put("terminal", ticket.getDocument().getTransaction().getTerminal());
 						item.getAdditionals().put("text", ticket.getDocument().getText());
-						item.getAdditionals().put("train", getTrainNumber(ticket.getDocument().getDetail().getTrain()));
+						OrderTrain train = ticket.getDocument().getDetail().getTrain();
+						item.getAdditionals().put("railway", ticket.getDocument().getDetail().getRailway().getValue());
+						item.getAdditionals().put("train", search.getTrainNumber(train.getDeparture(), train.getClas(), train.getCategory()));
 						item.getAdditionals().put("from_code", ticket.getDocument().getDetail().getStationFrom().getCode());
 						item.getAdditionals().put("from_name", ticket.getDocument().getDetail().getStationFrom().getValue());
 						item.getAdditionals().put("to_code", ticket.getDocument().getDetail().getStationTo().getCode());
@@ -431,46 +423,36 @@ public class OrderServiceController extends AbstractOrderService {
 		});
 	}
 	
-	private String getTrainNumber(OrderTrain train) {
-		String number = train.getValue();
-		switch (train.getClas()) {
-		case "4":
-			number += " ФІРМ";
-			break;
-		case "8":
-			number += " ЕПК";
-			break;
-		default:
-			break;
+	private String getCostDescription(Cost main) {
+		String description = String.format("КВ.%,2f", main.getTicket());
+		if (main.getReservedSeat() != null) {
+			description += String.format(" + ПЛ.%,2f", main.getReservedSeat());
 		}
-		switch (train.getCategory()) {
-		case "1":
-			number += " ІС+";
-			break;
-		case "2":
-			number += " ІС";
-			break;
-		case "3":
-			number += " РЕ";
-			break;
-		case "4":
-			number += " Р";
-			break;
-		case "5":
-			number += " НЕ";
-			break;
-		case "6":
-			number += " НШ";
-			break;
-		case "7":
-			number += " НП";
-			break;
-		default:
-			break;
+		if (main.getService() != null) {
+			description += String.format(" + СП.%,2f", main.getService());
 		}
-		return number;
+		if (main.getVat() != null) {
+			description += String.format(" + ПДВ.%,2f", main.getVat());
+		}
+		if (main.getInsurance() != null) {
+			description += String.format(" + СТР.%,2f", main.getInsurance());
+		}
+		if (main.getCommission() != null
+				|| main.getFee() != null) {
+			description += String.format(" + КЗБ.%,2f", (main.getCommission() != null ? main.getCommission() : BigDecimal.ZERO)
+					.add(main.getFee() != null ? main.getFee() : BigDecimal.ZERO));
+		}
+		if (main.getComService() != null) {
+			description += String.format(" + ПОСЛ.%,2f", main.getComService());
+		}
+		if (main.getAddReservedSeat() != null
+				|| main.getAddTicket() != null) {
+			description += String.format(" + ДОП.%,2f", (main.getAddReservedSeat() != null ? main.getAddReservedSeat() : BigDecimal.ZERO)
+					.add(main.getAddTicket() != null ? main.getAddTicket() : BigDecimal.ZERO));
+		}
+		return description;
 	}
-
+	
 	@Override
 	public OrderResponse cancelResponse(String orderId) {
 		return confirmOperation(orderId, (id, document) -> {
