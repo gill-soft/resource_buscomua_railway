@@ -2,6 +2,7 @@ package com.gillsoft.client;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,8 +10,8 @@ import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 
 public class Detail implements Serializable {
 
-	private static final long serialVersionUID = -4904295920978881114L;
-
+	private static final long serialVersionUID = 5484391650712794367L;
+	
 	private Value places;
 	private String kind;
 	private OrderWagon wagon;
@@ -33,6 +34,8 @@ public class Detail implements Serializable {
 
 	@JsonProperty("station_to")
 	private Value stationTo;
+	
+	private List<Value> services;
 
 	public Value getPlaces() {
 		return places;
@@ -112,6 +115,14 @@ public class Detail implements Serializable {
 
 	public void setStationTo(Value stationTo) {
 		this.stationTo = stationTo;
+	}
+
+	public List<Value> getServices() {
+		return services;
+	}
+
+	public void setServices(List<Value> services) {
+		this.services = services;
 	}
 
 }

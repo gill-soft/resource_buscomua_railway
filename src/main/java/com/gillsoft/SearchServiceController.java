@@ -179,7 +179,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	public String addSegment(Map<String, Vehicle> vehicles, Map<String, Locality> localities,
 			Map<String, Organisation> organisations, Map<String, Segment> segments, Train train, List<Wagon> wagons) {
 		Segment segment = new Segment();
-		segment.setNumber(getTrainNumber(train.getNumber() + wagons.get(0).getCharline(), train.getClas().getCode(), train.getCategory()));
+		segment.setNumber(getTrainNumber(train.getNumber(), train.getClas().getCode(), train.getCategory()));
 		segment.setDepartureDate(train.getDepartureDate());
 		segment.setArrivalDate(train.getArrivalDate());
 		segment.setFreeSeatsCount(getFreeSeatsCount(wagons));

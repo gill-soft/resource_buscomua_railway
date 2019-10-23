@@ -30,6 +30,7 @@ import com.gillsoft.client.RestClient;
 import com.gillsoft.client.Ticket;
 import com.gillsoft.client.Train;
 import com.gillsoft.client.TripIdModel;
+import com.gillsoft.client.Value;
 import com.gillsoft.client.Wagon;
 import com.gillsoft.model.CalcType;
 import com.gillsoft.model.Carriage;
@@ -164,8 +165,10 @@ public class OrderServiceController extends AbstractOrderService {
 	private Price createPrice(OrderDocument document) {
 		Map<String, Cost> costs = document.getCosts();
 		Price price = new Price();
-		BigDecimal total = document.getRsb() != null && document.getRsb().getCommission() != null ?
-				document.getRsb().getCommission().getTotal() : BigDecimal.ZERO;
+		BigDecimal total = document.getRsb() != null
+				&& document.getRsb().getCommission() != null
+				&& document.getRsb().getCommission().getTotal() != null ?
+						document.getRsb().getCommission().getTotal() : BigDecimal.ZERO;
 		BigDecimal totalVat = total.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP);
 		for (Cost cost : costs.values()) {
 			total = total.add(cost.getCost());
@@ -180,8 +183,10 @@ public class OrderServiceController extends AbstractOrderService {
 		// I-759.86ГРН=ТАР.614.26+КЗБ.18.33+ПДВ.126.53+СТР.0.74
 		Cost main = costs.get("0");
 		Tariff tariff = new Tariff();
-		tariff.setValue(main.getCarrier().subtract(main.getCommission())
-				.subtract(main.getCommissionVat()).subtract(main.getInsurance()));
+		tariff.setValue(main.getCarrier()
+				.subtract(main.getCommission() != null ? main.getCommission() : BigDecimal.ZERO)
+				.subtract(main.getCommissionVat() != null ? main.getCommissionVat() : BigDecimal.ZERO)
+				.subtract(main.getInsurance() != null ? main.getInsurance() : BigDecimal.ZERO));
 		tariff.setVat(main.getCarrierVat());
 		tariff.setId(document.getDetail().getKind());
 		price.setTariff(tariff);
@@ -189,30 +194,33 @@ public class OrderServiceController extends AbstractOrderService {
 		price.setCommissions(new ArrayList<>());
 		
 		// страховой сбор
-		Commission insurance = new Commission();
-		insurance.setCode("СТР");
-		insurance.setName(Lang.UA, "Страховий збір");
-		insurance.setValue(main.getInsurance());
-		insurance.setValueCalcType(CalcType.OUT);
-		insurance.setType(ValueType.FIXED);
-		price.getCommissions().add(insurance);
-		
+		if (main.getInsurance() != null) {
+			Commission insurance = new Commission();
+			insurance.setCode("СТР");
+			insurance.setName(Lang.UA, "Страховий збір");
+			insurance.setValue(main.getInsurance());
+			insurance.setValueCalcType(CalcType.OUT);
+			insurance.setType(ValueType.FIXED);
+			price.getCommissions().add(insurance);
+		}
 		// кассовый сбор
-		Commission ksb = new Commission();
-		ksb.setCode("КЗБ");
-		ksb.setName(Lang.UA, "Касовий збір");
-		ksb.setValue(main.getCommission().add(main.getCommissionVat()));
-		ksb.setVat(main.getCommissionVat());
-		ksb.setVatCalcType(CalcType.IN);
-		ksb.setValueCalcType(CalcType.OUT);
-		ksb.setType(ValueType.FIXED);
-		price.getCommissions().add(ksb);
-		
-		if (main.getFee() != null) {
-			
-			// дополнительный сбор
-			ksb.setValue(ksb.getValue().add(main.getFee().add(main.getFeeVat())));
-			ksb.setVat(ksb.getVat().add(main.getFeeVat()));
+		if (main.getCommission() != null
+				|| main.getFee() != null) {
+			Commission ksb = new Commission();
+			ksb.setCode("КЗБ");
+			ksb.setName(Lang.UA, "Касовий збір");
+			ksb.setValue(BigDecimal.ZERO
+					.add(main.getCommission() != null ? main.getCommission() : BigDecimal.ZERO)
+					.add(main.getCommissionVat() != null ? main.getCommissionVat() : BigDecimal.ZERO)
+					.add(main.getFee() != null ? main.getFee() : BigDecimal.ZERO) // дополнительный сбор
+					.add(main.getFeeVat() != null ? main.getFeeVat() : BigDecimal.ZERO));
+			ksb.setVat(BigDecimal.ZERO
+					.add(main.getCommissionVat() != null ? main.getCommissionVat() : BigDecimal.ZERO)
+					.add(main.getFeeVat() != null ? main.getFeeVat() : BigDecimal.ZERO)); // дополнительный сбор
+			ksb.setVatCalcType(CalcType.IN);
+			ksb.setValueCalcType(CalcType.OUT);
+			ksb.setType(ValueType.FIXED);
+			price.getCommissions().add(ksb);
 		}
 		// сервисный сбор
 		if (costs.containsKey("1")) {
@@ -242,27 +250,30 @@ public class OrderServiceController extends AbstractOrderService {
 		}
 		// другие сборы посредника
 		if (document.getRsb() != null && document.getRsb().getCommission() != null) {
-			Commission agent = new Commission();
-			agent.setCode("АГН");
-			agent.setName(Lang.UA, "Agent");
-			agent.setValue(document.getRsb().getCommission().getAgent());
-			agent.setVat(document.getRsb().getCommission().getAgent()
-					.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP));
-			agent.setVatCalcType(CalcType.IN);
-			agent.setValueCalcType(CalcType.OUT);
-			agent.setType(ValueType.FIXED);
-			price.getCommissions().add(agent);
-			
-			Commission provider = new Commission();
-			provider.setCode("ПР");
-			provider.setName(Lang.UA, "Provider");
-			provider.setValue(document.getRsb().getCommission().getProvider());
-			provider.setVat(document.getRsb().getCommission().getProvider()
-					.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP));
-			provider.setVatCalcType(CalcType.IN);
-			provider.setValueCalcType(CalcType.OUT);
-			provider.setType(ValueType.FIXED);
-			price.getCommissions().add(provider);
+			if (document.getRsb().getCommission().getAgent() != null) {
+				Commission agent = new Commission();
+				agent.setCode("АГН");
+				agent.setName(Lang.UA, "Agent");
+				agent.setValue(document.getRsb().getCommission().getAgent());
+				agent.setVat(document.getRsb().getCommission().getAgent()
+						.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP));
+				agent.setVatCalcType(CalcType.IN);
+				agent.setValueCalcType(CalcType.OUT);
+				agent.setType(ValueType.FIXED);
+				price.getCommissions().add(agent);
+			}
+			if (document.getRsb().getCommission().getProvider() != null) {
+				Commission provider = new Commission();
+				provider.setCode("ПР");
+				provider.setName(Lang.UA, "Provider");
+				provider.setValue(document.getRsb().getCommission().getProvider());
+				provider.setVat(document.getRsb().getCommission().getProvider()
+						.divide(new BigDecimal("6"), 2, RoundingMode.HALF_UP));
+				provider.setVatCalcType(CalcType.IN);
+				provider.setValueCalcType(CalcType.OUT);
+				provider.setType(ValueType.FIXED);
+				price.getCommissions().add(provider);
+			}
 		}
 		return price;
 	}
@@ -401,6 +412,8 @@ public class OrderServiceController extends AbstractOrderService {
 						item.getAdditionals().put("to_code", ticket.getDocument().getDetail().getStationTo().getCode());
 						item.getAdditionals().put("to_name", ticket.getDocument().getDetail().getStationTo().getValue());
 						item.getAdditionals().put("barcode", order.getBarcodeImage());
+						item.getAdditionals().put("service", ticket.getDocument().getDetail().getServices() != null ?
+								ticket.getDocument().getDetail().getServices().stream().map(Value::getValue).collect(Collectors.joining(",")) : "");
 						item.getAdditionals().put("electronic", String.valueOf(order.isElectronic()));
 						if (order.isElectronic()) {
 							item.getAdditionals().put("qr", ticket.getQrImage());
@@ -424,30 +437,30 @@ public class OrderServiceController extends AbstractOrderService {
 	}
 	
 	private String getCostDescription(Cost main) {
-		String description = String.format("КВ.%,2f", main.getTicket());
+		String description = String.format("КВ.%.2f", main.getTicket());
 		if (main.getReservedSeat() != null) {
-			description += String.format(" + ПЛ.%,2f", main.getReservedSeat());
+			description += String.format("+ПЛ.%.2f", main.getReservedSeat());
 		}
 		if (main.getService() != null) {
-			description += String.format(" + СП.%,2f", main.getService());
+			description += String.format("+СП.%.2f", main.getService());
 		}
 		if (main.getVat() != null) {
-			description += String.format(" + ПДВ.%,2f", main.getVat());
+			description += String.format("+ПДВ.%.2f", main.getVat());
 		}
 		if (main.getInsurance() != null) {
-			description += String.format(" + СТР.%,2f", main.getInsurance());
+			description += String.format("+СТР.%.2f", main.getInsurance());
 		}
 		if (main.getCommission() != null
 				|| main.getFee() != null) {
-			description += String.format(" + КЗБ.%,2f", (main.getCommission() != null ? main.getCommission() : BigDecimal.ZERO)
+			description += String.format("+КЗБ.%.2f", (main.getCommission() != null ? main.getCommission() : BigDecimal.ZERO)
 					.add(main.getFee() != null ? main.getFee() : BigDecimal.ZERO));
 		}
 		if (main.getComService() != null) {
-			description += String.format(" + ПОСЛ.%,2f", main.getComService());
+			description += String.format("+ПОСЛ.%.2f", main.getComService());
 		}
 		if (main.getAddReservedSeat() != null
 				|| main.getAddTicket() != null) {
-			description += String.format(" + ДОП.%,2f", (main.getAddReservedSeat() != null ? main.getAddReservedSeat() : BigDecimal.ZERO)
+			description += String.format("+ДОП.%.2f", (main.getAddReservedSeat() != null ? main.getAddReservedSeat() : BigDecimal.ZERO)
 					.add(main.getAddTicket() != null ? main.getAddTicket() : BigDecimal.ZERO));
 		}
 		return description;

@@ -168,7 +168,7 @@ public class OrderResult implements Serializable {
 	
 	public Train createTrain() {
 		Train train = new Train();
-		train.setNumber(this.train.getValue());
+		train.setNumber(this.train.getDeparture());
 		train.setModel(this.train.getModel());
 		train.setCategory(this.train.getCategory());
 		train.setFasted(new Value(null, this.train.getFasted()));
