@@ -58,7 +58,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	private RestClient client;
 	
 	@Autowired
-	@Qualifier("MemoryCacheHandler")
+	@Qualifier("RedisMemoryCache")
 	private CacheHandler cache;
 	
 	@Autowired
@@ -94,11 +94,11 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 					if (!searchPackage.getSearchResult().containsKey(train.getNumber())) {
 						
 						// запускаем формаирование маршрута
-						try {
-							client.getCachedRoute(result.getStationFrom().getCode(), result.getStationTo().getCode(),
-									train.getDepartureDate(), train.getNumber());
-						} catch (Exception e) {
-						}
+//						try {
+//							client.getCachedRoute(result.getStationFrom().getCode(), result.getStationTo().getCode(),
+//									train.getDepartureDate(), train.getNumber());
+//						} catch (Exception e) {
+//						}
 						Train details = client.getCachedTrain(result.getStationFrom().getCode(), result.getStationTo().getCode(),
 								train.getDepartureDate(), train.getNumber());
 						train.setStationFrom(result.getStationFrom());
