@@ -401,19 +401,23 @@ public class OrderServiceController extends AbstractOrderService {
 						Cost main = ticket.getDocument().getCosts().get("0");
 						total = total.add(main.getCost());
 						item.getAdditionals().put("cost", String.format("%.2f", main.getCost()));
-						item.getAdditionals().put("cost_desc", getCostDescription(main));
+						item.getAdditionals().put("cost_desc", getCostDescription(main, ticket.getDocument().getDetail().getServices()));
+						item.getAdditionals().put("cost_short_desc", getShortCostDescription(main));
 						item.getAdditionals().put("terminal", ticket.getDocument().getTransaction().getTerminal());
 						item.getAdditionals().put("text", ticket.getDocument().getText());
 						OrderTrain train = ticket.getDocument().getDetail().getTrain();
 						item.getAdditionals().put("railway", ticket.getDocument().getDetail().getRailway().getValue());
-						item.getAdditionals().put("train", search.getTrainNumber(train.getDeparture(), train.getClas(), train.getCategory()));
+						item.getAdditionals().put("train", search.getTrainNumber(train.getDeparture(), train.getClas(), train.getCategory(),
+								ticket.getDocument().getDetail().getWagon().isFirm()));
+						if (train.getArrival() != null && train.getArrival().contains("*")) {
+							item.getAdditionals().put("train_arrival", train.getArrival());
+						}
 						item.getAdditionals().put("from_code", ticket.getDocument().getDetail().getStationFrom().getCode());
 						item.getAdditionals().put("from_name", ticket.getDocument().getDetail().getStationFrom().getValue());
 						item.getAdditionals().put("to_code", ticket.getDocument().getDetail().getStationTo().getCode());
 						item.getAdditionals().put("to_name", ticket.getDocument().getDetail().getStationTo().getValue());
 						item.getAdditionals().put("barcode", order.getBarcodeImage());
-						item.getAdditionals().put("service", ticket.getDocument().getDetail().getServices() != null ?
-								ticket.getDocument().getDetail().getServices().stream().map(Value::getValue).collect(Collectors.joining(",")) : "");
+						item.getAdditionals().put("service", getServices(ticket.getDocument().getDetail().getServices()));
 						item.getAdditionals().put("electronic", String.valueOf(order.isElectronic()));
 						if (order.isElectronic()) {
 							item.getAdditionals().put("qr", ticket.getQrImage());
@@ -436,7 +440,48 @@ public class OrderServiceController extends AbstractOrderService {
 		});
 	}
 	
-	private String getCostDescription(Cost main) {
+	//	Ш – 1 чай, ЧАЙ1
+	//	Ч – 2 чая, ЧАЙ2
+	//	Х – веган-ланч, ВЕГ-ЛАНЧ.
+	//	П – постільні речі, БІЛ
+	//	В – мінеральна вода, М.ВОДА
+	//	Г - гаряче харчування, ГАР.ХАРЧ
+	//	К – кава, КАВА
+	//	Н – 1 напій (в поїзді обирається один з перелічених напоїв: чай, кава, кавовий напій, мінеральна вода), НАП.1
+	//	М – 2 напої, НАП.2
+	private String getServices(List<Value> services) {
+		if (services != null) {
+			return services.stream().map(v -> getServiceName(v)).collect(Collectors.joining(","));
+		}
+		return "";
+	}
+	
+	private String getServiceName(Value service) {
+		switch (service.getCode()) {
+		case "Ш":
+			return "ЧАЙ1";
+		case "Ч":
+			return "ЧАЙ2";
+		case "Х":
+			return "ВЕГ-ЛАНЧ.";
+		case "П":
+			return "БІЛ";
+		case "В":
+			return "ВОДА";
+		case "Г":
+			return "ГАР.ХАРЧ";
+		case "К":
+			return "КАВА";
+		case "Н":
+			return "НАП.1";
+		case "М":
+			return "НАП.2";
+		default:
+			return "";
+		}
+	}
+	
+	private String getCostDescription(Cost main, List<Value> services) {
 		String description = String.format("КВ.%.2f", main.getTicket());
 		if (main.getReservedSeat() != null) {
 			description += String.format("+ПЛ.%.2f", main.getReservedSeat());
@@ -462,6 +507,25 @@ public class OrderServiceController extends AbstractOrderService {
 				|| main.getAddTicket() != null) {
 			description += String.format("+ДОП.%.2f", (main.getAddReservedSeat() != null ? main.getAddReservedSeat() : BigDecimal.ZERO)
 					.add(main.getAddTicket() != null ? main.getAddTicket() : BigDecimal.ZERO));
+		}
+		description = "(" + description + ")";
+		if (services != null) {
+			description += " В Т.Ч. ";
+			description += services.stream().map(v -> getServiceName(v) + String.format("-%.2f", v.getCost())).collect(Collectors.joining(" "));
+			description += " (З ПДВ)";
+		}
+		return description;
+	}
+	
+	private String getShortCostDescription(Cost main) {
+		String description = String.format("%.2f", main.getCost()
+				.subtract(main.getInsurance() != null ? main.getInsurance() : BigDecimal.ZERO)
+				.subtract(main.getVat() != null ? main.getVat() : BigDecimal.ZERO));
+		if (main.getInsurance() != null) {
+			description += String.format(" + %.2f (страх.збір)", main.getInsurance());
+		}
+		if (main.getVat() != null) {
+			description += String.format(" + %.2f", main.getVat());
 		}
 		return description;
 	}

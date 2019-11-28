@@ -12,6 +12,7 @@ public class OrderTrain implements Serializable {
 	private String value;
 	private String model;
 	private String departure;
+	private String arrival;
 	private String category;
 	
 	@JsonProperty("class")
@@ -47,6 +48,14 @@ public class OrderTrain implements Serializable {
 
 	public void setDeparture(String departure) {
 		this.departure = departure;
+	}
+
+	public String getArrival() {
+		return arrival;
+	}
+
+	public void setArrival(String arrival) {
+		this.arrival = arrival;
 	}
 
 	public String getCategory() {

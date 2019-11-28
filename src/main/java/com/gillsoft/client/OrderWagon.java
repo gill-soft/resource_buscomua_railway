@@ -9,7 +9,7 @@ public class OrderWagon implements Serializable {
 	private static final long serialVersionUID = -5004517189630821217L;
 	
 	private String value;
-	private String firm;
+	private boolean firm;
 	private String type;
 	
 	@JsonProperty("class")
@@ -23,11 +23,11 @@ public class OrderWagon implements Serializable {
 		this.value = value;
 	}
 
-	public String getFirm() {
+	public boolean isFirm() {
 		return firm;
 	}
 
-	public void setFirm(String firm) {
+	public void setFirm(boolean firm) {
 		this.firm = firm;
 	}
 
