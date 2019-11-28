@@ -208,12 +208,12 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 			segments.put(key, segment);
 			
 			// получаем маршрут
-			try {
-				List<Country> route = client.getCachedRoute(train.getStationFrom().getCode(), train.getStationTo().getCode(),
-						train.getDepartureDate(), train.getNumber());
-				segment.setRoute(createRoute(route, localities));
-			} catch (Exception e) {
-			}
+//			try {
+//				List<Country> route = client.getCachedRoute(train.getStationFrom().getCode(), train.getStationTo().getCode(),
+//						train.getDepartureDate(), train.getNumber());
+//				segment.setRoute(createRoute(route, localities));
+//			} catch (Exception e) {
+//			}
 			return key;
 		}
 		return null;
