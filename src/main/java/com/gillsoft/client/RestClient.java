@@ -131,7 +131,6 @@ public class RestClient {
 		Map<String, Object> params = new HashMap<>();
 		params.put(RedisMemoryCache.OBJECT_NAME, RestClient.STATIONS_CACHE_KEY);
 		params.put(RedisMemoryCache.IGNORE_AGE, true);
-		params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheStationsUpdateDelay());
 		params.put(RedisMemoryCache.UPDATE_TASK, new StationsUpdateTask());
 		return (List<Country>) cache.read(params);
 	}

@@ -44,28 +44,12 @@ public class Config {
 		return Long.valueOf(properties.getProperty("cache.trip.time.to.live"));
 	}
 	
-	public static long getCacheTripUpdateDelay() {
-		return Long.valueOf(properties.getProperty("cache.trip.update.delay"));
-	}
-	
 	public static long getCacheTripSeatsTimeToLive() {
 		return Long.valueOf(properties.getProperty("cache.trip.seats.time.to.live"));
 	}
 	
-	public static long getCacheTripSeatsUpdateDelay() {
-		return Long.valueOf(properties.getProperty("cache.trip.seats.update.delay"));
-	}
-	
-	public static long getCacheStationsUpdateDelay() {
-		return Long.valueOf(properties.getProperty("cache.stations.update.delay"));
-	}
-	
 	public static long getCacheErrorTimeToLive() {
 		return Long.valueOf(properties.getProperty("cache.error.time.to.live"));
-	}
-	
-	public static long getCacheErrorUpdateDelay() {
-		return Long.valueOf(properties.getProperty("cache.error.update.delay"));
 	}
 	
 }
