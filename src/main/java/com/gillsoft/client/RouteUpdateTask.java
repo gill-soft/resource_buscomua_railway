@@ -13,12 +13,12 @@ public class RouteUpdateTask extends AbstractUpdateTask {
 	private static final long serialVersionUID = 5964528266364148528L;
 	private static final String POOL_NAME = "RAILWAY_ROUTE_POOL";
 	private static final int POOL_SIZE = 20;
+	private static final SerializablePoolType poolType = new SerializablePoolType(POOL_SIZE, POOL_NAME);
 	
 	private String from;
 	private String to;
 	private Date date;
 	private String trainNumber;
-	private SerializablePoolType poolType = new SerializablePoolType(POOL_SIZE, POOL_NAME);
 	
 	public RouteUpdateTask(String from, String to, Date date, String trainNumber) {
 		this.from = from;
