@@ -46,6 +46,7 @@ import com.gillsoft.model.SimpleTripSearchPackage;
 import com.gillsoft.model.Tariff;
 import com.gillsoft.model.Trip;
 import com.gillsoft.model.TripContainer;
+import com.gillsoft.model.TripType;
 import com.gillsoft.model.Vehicle;
 import com.gillsoft.model.request.TripSearchRequest;
 import com.gillsoft.model.response.TripSearchResponse;
@@ -179,6 +180,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	public String addSegment(Map<String, Vehicle> vehicles, Map<String, Locality> localities,
 			Map<String, Organisation> organisations, Map<String, Segment> segments, Train train, List<Wagon> wagons) {
 		Segment segment = new Segment();
+		segment.setType(TripType.RAILWAY_REGULAR);
 		segment.setNumber(getTrainNumber(train.getNumber(), train.getClas().getCode(), train.getCategory(), false));
 		segment.setDepartureDate(train.getDepartureDate());
 		segment.setArrivalDate(train.getArrivalDate());
