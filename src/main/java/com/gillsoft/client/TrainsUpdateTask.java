@@ -55,6 +55,9 @@ public class TrainsUpdateTask extends AbstractUpdateTask {
 		if (updateDelay > THIRTY_SIX_HOURS) {
 			updateDelay = updateDelay / 2;
 		}
+		if (updateDelay < 0) {
+			return Config.getCacheErrorTimeToLive(); 
+		}
 		return updateDelay;
 	}
 	
