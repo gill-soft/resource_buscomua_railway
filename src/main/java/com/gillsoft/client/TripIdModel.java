@@ -9,6 +9,7 @@ public class TripIdModel extends AbstractJsonModel {
 	private static final long serialVersionUID = -130344874781711022L;
 
 	private String car;
+	private String line;
 	private String clas;
 	private String type;
 	private String train;
@@ -20,8 +21,9 @@ public class TripIdModel extends AbstractJsonModel {
 
 	}
 
-	public TripIdModel(String car, String clas, String type, String train, String from, String to, Date date) {
+	public TripIdModel(String car, String line, String clas, String type, String train, String from, String to, Date date) {
 		this.car = car;
+		this.line = line;
 		this.clas = clas;
 		this.type = type;
 		this.train = train;
@@ -36,6 +38,14 @@ public class TripIdModel extends AbstractJsonModel {
 
 	public void setCar(String car) {
 		this.car = car;
+	}
+
+	public String getLine() {
+		return line;
+	}
+
+	public void setLine(String line) {
+		this.line = line;
 	}
 
 	public String getClas() {

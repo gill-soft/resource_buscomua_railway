@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -194,18 +195,20 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 		Wagon first = wagons.get(0);
 		segment.setPrice(createPrice(first));
 		
-		TripIdModel id = new TripIdModel(first.getNumber(), first.getClas().getCode(), first.getType().getCode(),
+		TripIdModel id = new TripIdModel(first.getNumber(), first.getCharline(), first.getClas().getCode(), first.getType().getCode(),
 				train.getNumber(), train.getStationFrom().getCode(), train.getStationTo().getCode(), train.getDepartureDate());
 		
 		segment.setCarriages(new ArrayList<>(wagons.size()));
 		for (Wagon wagon : wagons) {
 			Carriage carriage = createCarriage(wagon);
 			id.setCar(wagon.getNumber());
+			id.setLine(wagon.getCharline());
 			carriage.setId(id.asString());
 			segment.getCarriages().add(carriage);
 		}
 		if (!segment.getCarriages().isEmpty()) {
-			id.setCar(null);
+			id.setCar(first.getNumber());
+			id.setLine(first.getCharline());
 			String key = id.asString();
 			segments.put(key, segment);
 			
@@ -410,6 +413,11 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 			TripIdModel idModel = new TripIdModel().create(tripId);
 			Train train = client.getCachedPlaces(idModel.getFrom(), idModel.getTo(), idModel.getDate(), idModel.getTrain(),
 					idModel.getType(), idModel.getClas(), idModel.getCar());
+			for (Wagon wagon : train.getWagons()) {
+				if (Objects.equals(idModel.getLine(), wagon.getCharline())) {
+					return wagon;
+				}
+			}
 			return train.getWagons().get(0);
 		} catch (ResponseError e) {
 			throw new RestClientException(e.getMessage());
