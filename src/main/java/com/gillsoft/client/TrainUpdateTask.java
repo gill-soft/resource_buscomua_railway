@@ -45,6 +45,9 @@ public class TrainUpdateTask extends AbstractUpdateTask {
 		if (Config.getCacheTripTimeToLive() != 0) {
 			return Config.getCacheTripTimeToLive();
 		}
+		if (date.getTime() < System.currentTimeMillis()) {
+			return Config.getCacheErrorTimeToLive();
+		}
 		return date.getTime() - System.currentTimeMillis();
 	}
 
