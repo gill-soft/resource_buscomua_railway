@@ -39,12 +39,12 @@ public class TrainsUpdateTask extends AbstractUpdateTask {
 				}
 			}
 			writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), result,
-					getTimeToLive(trains), getHalfPartOfDepartureTime(date), false, true, poolType);
+					getTimeToLive(trains), getHalfPartOfDepartureTime(date), false, false, poolType);
 		} catch (ResponseError e) {
 			
 			// ошибку тоже кладем в кэш
 			writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), e,
-					getHalfPartOfDepartureTime(date), 0, false, true, poolType);
+					Config.getCacheErrorTimeToLive(), 0, false, true, poolType);
 		}
 	}
 	
