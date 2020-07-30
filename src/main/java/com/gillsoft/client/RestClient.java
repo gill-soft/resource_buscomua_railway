@@ -213,7 +213,7 @@ public class RestClient {
 		request.getParams().setWagonClass(carClass);
 		request.getParams().setWagonType(carType);
 		request.getParams().setWagonNumber(carNumber);
-		return getResult(searchTemplate, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult().getTrain();
+		return getResult(template, request, new ParameterizedTypeReference<Response<Result>>() {}).getResult().getTrain();
 	}
 	
 	@SuppressWarnings("unchecked")
