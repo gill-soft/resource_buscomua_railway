@@ -18,6 +18,7 @@ import org.springframework.web.client.RestClientException;
 import com.gillsoft.abstract_rest_service.SimpleAbstractTripSearchService;
 import com.gillsoft.cache.CacheHandler;
 import com.gillsoft.cache.IOCacheException;
+import com.gillsoft.client.Config;
 import com.gillsoft.client.Country;
 import com.gillsoft.client.RestClient;
 import com.gillsoft.client.Result;
@@ -96,11 +97,11 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 					if (!searchPackage.getSearchResult().containsKey(train.getNumber())) {
 						
 						// запускаем формаирование маршрута
-						try {
-							client.getCachedRoute(result.getStationFrom().getCode(), result.getStationTo().getCode(),
-									train.getDepartureDate(), train.getNumber());
-						} catch (Exception e) {
-						}
+//						try {
+//							client.getCachedRoute(result.getStationFrom().getCode(), result.getStationTo().getCode(),
+//									train.getDepartureDate(), train.getNumber());
+//						} catch (Exception e) {
+//						}
 						Train details = client.getCachedTrain(result.getStationFrom().getCode(), result.getStationTo().getCode(),
 								train.getDepartureDate(), train.getNumber());
 						train.setStationFrom(result.getStationFrom());
@@ -213,12 +214,12 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 			segments.put(key, segment);
 			
 			// получаем маршрут
-			try {
-				List<Country> route = client.getCachedRoute(train.getStationFrom().getCode(), train.getStationTo().getCode(),
-						train.getDepartureDate(), train.getNumber());
-				segment.setRoute(createRoute(route, localities));
-			} catch (Exception e) {
-			}
+//			try {
+//				List<Country> route = client.getCachedRoute(train.getStationFrom().getCode(), train.getStationTo().getCode(),
+//						train.getDepartureDate(), train.getNumber());
+//				segment.setRoute(createRoute(route, localities));
+//			} catch (Exception e) {
+//			}
 			return key;
 		}
 		return null;
@@ -368,12 +369,23 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	@Override
 	public Route getRouteResponse(String tripId) {
 		TripIdModel idModel = new TripIdModel().create(tripId);
-		try {
-			List<Country> route = client.getCachedRoute(idModel.getFrom(), idModel.getTo(), idModel.getDate(), idModel.getTrain());
-			return createRoute(route, null);
-		} catch (IOCacheException | ResponseError e) {
-			throw new RestClientException(e.getMessage());
-		}
+		int tryCount = 0;
+		int totalTry = Config.getRequestTimeout() / 500;
+		do {
+			try {
+				List<Country> route = client.getCachedRoute(idModel.getFrom(), idModel.getTo(), idModel.getDate(), idModel.getTrain());
+				return createRoute(route, null);
+			} catch (ResponseError e) {
+				throw new RestClientException(e.getMessage());
+			} catch (IOCacheException e) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e1) {
+				}
+			}
+			// пытаемся получить карту мест в течении 5 секунд
+		} while (tryCount++ < totalTry);
+		return null;
 	}
 	
 	private Route createRoute(List<Country> trainRoute, Map<String, Locality> localities) {

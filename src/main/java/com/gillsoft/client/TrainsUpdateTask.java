@@ -13,7 +13,7 @@ public class TrainsUpdateTask extends AbstractUpdateTask {
 	private static final long serialVersionUID = -5103341288539272796L;
 	private static final long THIRTY_SIX_HOURS = 129600000l;
 	private static final String POOL_NAME = "RAILWAY_TRAINS_POOL";
-	private static final int POOL_SIZE = 100;
+	private static final int POOL_SIZE = 20;
 	private static final SerializablePoolType poolType = new SerializablePoolType(POOL_SIZE, POOL_NAME);
 	
 	private String from;
