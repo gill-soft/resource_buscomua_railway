@@ -9,7 +9,8 @@ import com.gillsoft.util.ContextProvider;
 
 public class TrainUpdateTask extends AbstractUpdateTask {
 
-	private static final long serialVersionUID = -3353809778569437497L;
+	private static final long serialVersionUID = 8020863932495639088L;
+	
 	private static final String POOL_NAME = "RAILWAY_TRAIN_POOL";
 	private static final int POOL_SIZE = 200;
 	private static final SerializablePoolType poolType = new SerializablePoolType(POOL_SIZE, POOL_NAME);

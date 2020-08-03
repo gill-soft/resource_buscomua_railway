@@ -10,7 +10,8 @@ import com.gillsoft.util.ContextProvider;
 
 public class RouteUpdateTask extends AbstractUpdateTask {
 
-	private static final long serialVersionUID = 5964528266364148528L;
+	private static final long serialVersionUID = 6381968613582210774L;
+	
 	private static final String POOL_NAME = "RAILWAY_ROUTE_POOL";
 	private static final int POOL_SIZE = 20;
 	private static final SerializablePoolType poolType = new SerializablePoolType(POOL_SIZE, POOL_NAME);
