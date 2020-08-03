@@ -10,7 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.logging.log4j.LogManager;
@@ -41,6 +46,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.gillsoft.cache.CacheHandler;
 import com.gillsoft.cache.IOCacheException;
 import com.gillsoft.cache.RedisMemoryCache;
+import com.gillsoft.concurrent.PoolType;
+import com.gillsoft.concurrent.ThreadPoolStore;
 import com.gillsoft.logging.RequestResponseLoggingInterceptor;
 import com.gillsoft.model.Customer;
 import com.gillsoft.model.ResponseError;
@@ -99,9 +106,22 @@ public class RestClient {
 	// для запросов поиска с меньшим таймаутом
 	private RestTemplate searchTemplate;
 	
+	private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
+	private Queue<Runnable> requestTasks = new ConcurrentLinkedQueue<>();
+	
 	public RestClient() {
+		scheduleAtFixedRate();
 		template = createNewPoolingTemplate(Config.getRequestTimeout());
 		searchTemplate = createNewPoolingTemplate(Config.getSearchRequestTimeout());
+	}
+	
+	private void scheduleAtFixedRate() {
+		executorService.scheduleAtFixedRate(() -> {
+			Runnable task = requestTasks.poll();
+			if (task != null) {
+				ThreadPoolStore.execute(PoolType.SEARCH, task);
+			}
+		}, 0, 500, TimeUnit.MILLISECONDS);
 	}
 	
 	public RestTemplate createNewPoolingTemplate(int requestTimeout) {
@@ -124,6 +144,10 @@ public class RestClient {
 			}
 		}
 		return template;
+	}
+	
+	public void addRequestTask(Runnable runnable) {
+		requestTasks.add(runnable);
 	}
 	
 	@SuppressWarnings("unchecked")

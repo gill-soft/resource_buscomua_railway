@@ -30,15 +30,17 @@ public class RouteUpdateTask extends AbstractUpdateTask {
 	@Override
 	public void run() {
 		RestClient client = ContextProvider.getBean(RestClient.class);
-		try {
-			List<Country> route = client.getRoute(from, to, date, trainNumber);
-			writeObject(client.getCache(), RestClient.getRouteCacheKey(date, trainNumber), route,
-					getTimeToLive(), 0, false, true, poolType);
-		} catch (ResponseError e) {
-			// ошибку тоже кладем в кэш и не обновляем
-			writeObject(client.getCache(), RestClient.getRouteCacheKey(date, trainNumber), e,
-					getTimeToLive(), 0, false, true, poolType);
-		}
+		client.addRequestTask(() -> {
+			try {
+				List<Country> route = client.getRoute(from, to, date, trainNumber);
+				writeObject(client.getCache(), RestClient.getRouteCacheKey(date, trainNumber), route,
+						getTimeToLive(), 0, false, true, poolType);
+			} catch (ResponseError e) {
+				// ошибку тоже кладем в кэш и не обновляем
+				writeObject(client.getCache(), RestClient.getRouteCacheKey(date, trainNumber), e,
+						getTimeToLive(), 0, false, true, poolType);
+			}
+		});
 	}
 	
 	// время жизни до момента отправления

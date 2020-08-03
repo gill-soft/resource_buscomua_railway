@@ -29,23 +29,25 @@ public class TrainsUpdateTask extends AbstractUpdateTask {
 	@Override
 	public void run() {
 		RestClient client = ContextProvider.getBean(RestClient.class);
-		try {
-			Result result = client.getTrains(from, to, date);
-			List<Train> trains = result.getTrains();
-			for (Train train : trains) {
-				try {
-					client.getCachedTrain(from, to, train.getDepartureDate(), train.getNumber());
-				} catch (Exception e) {
+		client.addRequestTask(() -> {
+			try {
+				Result result = client.getTrains(from, to, date);
+				List<Train> trains = result.getTrains();
+				for (Train train : trains) {
+					try {
+						client.getCachedTrain(from, to, train.getDepartureDate(), train.getNumber());
+					} catch (Exception e) {
+					}
 				}
+				writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), result,
+						getTimeToLive(trains), getHalfPartOfDepartureTime(date), false, false, poolType);
+			} catch (ResponseError e) {
+				
+				// ошибку тоже кладем в кэш
+				writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), e,
+						Config.getCacheErrorTimeToLive(), 0, false, true, poolType);
 			}
-			writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), result,
-					getTimeToLive(trains), getHalfPartOfDepartureTime(date), false, false, poolType);
-		} catch (ResponseError e) {
-			
-			// ошибку тоже кладем в кэш
-			writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), e,
-					Config.getCacheErrorTimeToLive(), 0, false, true, poolType);
-		}
+		});
 	}
 	
 	// если до даты отправления больше полторы суток, то время обновления
