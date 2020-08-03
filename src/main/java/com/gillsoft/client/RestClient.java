@@ -111,8 +111,8 @@ public class RestClient {
 	
 	public RestClient() {
 		scheduleAtFixedRate();
-		template = createNewPoolingTemplate(Config.getRequestTimeout());
-		searchTemplate = createNewPoolingTemplate(Config.getSearchRequestTimeout());
+		template = createNewPoolingTemplate(Config.getRequestTimeout(), 30);
+		searchTemplate = createNewPoolingTemplate(Config.getSearchRequestTimeout(), 5);
 	}
 	
 	private void scheduleAtFixedRate() {
@@ -124,9 +124,9 @@ public class RestClient {
 		}, 0, 500, TimeUnit.MILLISECONDS);
 	}
 	
-	public RestTemplate createNewPoolingTemplate(int requestTimeout) {
+	public RestTemplate createNewPoolingTemplate(int requestTimeout, int maxConnection) {
 		RestTemplate template = new RestTemplate(new BufferingClientHttpRequestFactory(
-				RestTemplateUtil.createPoolingFactory(Config.getUrl(), 30, requestTimeout, true, true)));
+				RestTemplateUtil.createPoolingFactory(Config.getUrl(), maxConnection, requestTimeout, true, true)));
 		template.setInterceptors(Collections.singletonList(
 				new RequestResponseLoggingInterceptor() {
 
