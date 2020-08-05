@@ -4,18 +4,12 @@ import java.util.Date;
 import java.util.List;
 
 import com.gillsoft.cache.AbstractUpdateTask;
-import com.gillsoft.concurrent.SerializablePoolType;
 import com.gillsoft.model.ResponseError;
 import com.gillsoft.util.ContextProvider;
 
 public class TrainsUpdateTask extends AbstractUpdateTask {
 
-	private static final long serialVersionUID = 764918112366877085L;
-	
 	private static final long THIRTY_SIX_HOURS = 129600000l;
-	private static final String POOL_NAME = "RAILWAY_TRAINS_POOL";
-	private static final int POOL_SIZE = 20;
-	private static final SerializablePoolType poolType = new SerializablePoolType(POOL_SIZE, POOL_NAME);
 	
 	private String from;
 	private String to;
@@ -41,12 +35,12 @@ public class TrainsUpdateTask extends AbstractUpdateTask {
 					}
 				}
 				writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), result,
-						getTimeToLive(trains), getHalfPartOfDepartureTime(date), false, false, poolType);
+						getTimeToLive(trains), getHalfPartOfDepartureTime(date), false, false);
 			} catch (ResponseError e) {
 				
 				// ошибку тоже кладем в кэш
 				writeObject(client.getCache(), RestClient.getTrainsCacheKey(date, from, to), e,
-						Config.getCacheErrorTimeToLive(), 0, false, true, poolType);
+						Config.getCacheErrorTimeToLive(), 0, false, true);
 			}
 		});
 	}
