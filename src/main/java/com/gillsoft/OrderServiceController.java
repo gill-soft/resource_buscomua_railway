@@ -375,12 +375,12 @@ public class OrderServiceController extends AbstractOrderService {
 	}
 
 	@Override
-	public OrderResponse bookingResponse(String orderId) {
+	public OrderResponse bookingResponse(String orderId, OrderRequest request) {
 		throw RestClient.createUnavailableMethod();
 	}
 
 	@Override
-	public OrderResponse confirmResponse(String orderId) {
+	public OrderResponse confirmResponse(String orderId, OrderRequest request) {
 		return confirmOperation(orderId, (id, document) -> {
 			if (RestClient.RESERVETION_STATUS.contains(document.getStatus())) {
 				List<Order> orders = client.pay(id);
@@ -531,7 +531,7 @@ public class OrderServiceController extends AbstractOrderService {
 	}
 	
 	@Override
-	public OrderResponse cancelResponse(String orderId) {
+	public OrderResponse cancelResponse(String orderId, OrderRequest request) {
 		return confirmOperation(orderId, (id, document) -> {
 			if (RestClient.RESERVETION_STATUS.contains(document.getStatus())) {
 				client.revocation(id);
