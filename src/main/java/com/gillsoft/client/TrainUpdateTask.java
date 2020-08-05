@@ -7,6 +7,8 @@ import com.gillsoft.model.ResponseError;
 import com.gillsoft.util.ContextProvider;
 
 public class TrainUpdateTask extends AbstractUpdateTask {
+	
+	private static final long serialVersionUID = 8020863932495639088L;
 
 	private String from;
 	private String to;

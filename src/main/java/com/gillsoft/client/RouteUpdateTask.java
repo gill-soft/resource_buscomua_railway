@@ -8,6 +8,8 @@ import com.gillsoft.model.ResponseError;
 import com.gillsoft.util.ContextProvider;
 
 public class RouteUpdateTask extends AbstractUpdateTask {
+	
+	private static final long serialVersionUID = 6381968613582210774L;
 
 	private String from;
 	private String to;

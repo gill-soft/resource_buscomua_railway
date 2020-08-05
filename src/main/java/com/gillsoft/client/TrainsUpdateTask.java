@@ -8,6 +8,8 @@ import com.gillsoft.model.ResponseError;
 import com.gillsoft.util.ContextProvider;
 
 public class TrainsUpdateTask extends AbstractUpdateTask {
+	
+	private static final long serialVersionUID = 764918112366877085L;
 
 	private static final long THIRTY_SIX_HOURS = 129600000l;
 	
