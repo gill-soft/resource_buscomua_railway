@@ -106,7 +106,7 @@ public class RestClient {
 	// для запросов поиска с меньшим таймаутом
 	private RestTemplate searchTemplate;
 	
-	private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
+	private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
 	private Queue<Runnable> requestTasks = new ConcurrentLinkedQueue<>();
 	
 	public RestClient() {
@@ -119,7 +119,7 @@ public class RestClient {
 		executorService.scheduleAtFixedRate(() -> {
 			Runnable task = requestTasks.poll();
 			if (task != null) {
-				ThreadPoolStore.execute(PoolType.SEARCH, task);
+				ThreadPoolStore.execute(PoolType.RESOURCE_INFO, task);
 			}
 		}, 0, 500, TimeUnit.MILLISECONDS);
 	}
