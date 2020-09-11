@@ -121,7 +121,7 @@ public class RestClient {
 			if (task != null) {
 				ThreadPoolStore.execute(PoolType.RESOURCE_INFO, task);
 			}
-		}, 0, 500, TimeUnit.MILLISECONDS);
+		}, 0, 40, TimeUnit.SECONDS);
 	}
 	
 	public RestTemplate createNewPoolingTemplate(int requestTimeout, int maxConnection) {
