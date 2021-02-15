@@ -106,23 +106,23 @@ public class RestClient {
 	// для запросов поиска с меньшим таймаутом
 	private RestTemplate searchTemplate;
 	
-	private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
-	private Queue<Runnable> requestTasks = new ConcurrentLinkedQueue<>();
+//	private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+//	private Queue<Runnable> requestTasks = new ConcurrentLinkedQueue<>();
 	
 	public RestClient() {
-		scheduleAtFixedRate();
+//		scheduleAtFixedRate();
 		template = createNewPoolingTemplate(Config.getRequestTimeout(), 30);
 		searchTemplate = createNewPoolingTemplate(Config.getSearchRequestTimeout(), 5);
 	}
 	
-	private void scheduleAtFixedRate() {
-		executorService.scheduleAtFixedRate(() -> {
-			Runnable task = requestTasks.poll();
-			if (task != null) {
-				ThreadPoolStore.execute(PoolType.RESOURCE_INFO, task);
-			}
-		}, 0, 40, TimeUnit.SECONDS);
-	}
+//	private void scheduleAtFixedRate() {
+//		executorService.scheduleAtFixedRate(() -> {
+//			Runnable task = requestTasks.poll();
+//			if (task != null) {
+//				ThreadPoolStore.execute(PoolType.RESOURCE_INFO, task);
+//			}
+//		}, 0, 40, TimeUnit.SECONDS);
+//	}
 	
 	public RestTemplate createNewPoolingTemplate(int requestTimeout, int maxConnection) {
 		RestTemplate template = new RestTemplate(new BufferingClientHttpRequestFactory(
@@ -146,9 +146,9 @@ public class RestClient {
 		return template;
 	}
 	
-	public void addRequestTask(Runnable runnable) {
-		requestTasks.add(runnable);
-	}
+//	public void addRequestTask(Runnable runnable) {
+//		requestTasks.add(runnable);
+//	}
 	
 	@SuppressWarnings("unchecked")
 	public List<Country> getCachedStations() throws IOCacheException {

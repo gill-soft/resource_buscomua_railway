@@ -25,7 +25,7 @@ public class TrainUpdateTask extends AbstractUpdateTask {
 	@Override
 	public void run() {
 		RestClient client = ContextProvider.getBean(RestClient.class);
-		client.addRequestTask(() -> {
+//		client.addRequestTask(() -> {
 			try {
 				Train train = client.getTrain(from, to, date, trainNumber);
 				writeObject(client.getCache(), RestClient.getTrainCacheKey(from, to, date, trainNumber), train,
@@ -35,7 +35,7 @@ public class TrainUpdateTask extends AbstractUpdateTask {
 				writeObject(client.getCache(), RestClient.getTrainCacheKey(from, to, date, trainNumber), e,
 						Config.getCacheErrorTimeToLive(), 0, false, true);
 			}
-		});
+//		});
 	}
 	
 	// время жизни до момента отправления

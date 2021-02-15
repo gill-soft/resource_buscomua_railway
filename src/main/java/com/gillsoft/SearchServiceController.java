@@ -75,13 +75,17 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 	@Override
 	public void addInitSearchCallables(List<Callable<SimpleTripSearchPackage<Map<String, Train>>>> callables,
 			TripSearchRequest request) {
-		callables.add(() -> {
-			SimpleTripSearchPackage<Map<String, Train>> searchPackage = new SimpleTripSearchPackage<>();
-			searchPackage.setSearchResult(new HashMap<>());
-			searchPackage.setRequest(request);
-			searchTrips(searchPackage);
-			return searchPackage;
-		});
+		if ("2204001".equals(request.getLocalityPairs().get(0)[0])
+				&& "2218000".equals(request.getLocalityPairs().get(0)[1])
+				&& "2021-02-25".equals(StringUtil.dateFormat.format(request.getDates().get(0)))) {			
+			callables.add(() -> {
+				SimpleTripSearchPackage<Map<String, Train>> searchPackage = new SimpleTripSearchPackage<>();
+				searchPackage.setSearchResult(new HashMap<>());
+				searchPackage.setRequest(request);
+				searchTrips(searchPackage);
+				return searchPackage;
+			});
+		}
 	}
 	
 	private void searchTrips(SimpleTripSearchPackage<Map<String, Train>> searchPackage) {
