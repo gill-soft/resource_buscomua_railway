@@ -77,7 +77,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Sim
 			TripSearchRequest request) {
 		if ("2204001".equals(request.getLocalityPairs().get(0)[0])
 				&& "2218000".equals(request.getLocalityPairs().get(0)[1])
-				&& "2021-02-25".equals(StringUtil.dateFormat.format(request.getDates().get(0)))) {			
+				&& "2021-05-16".equals(StringUtil.dateFormat.format(request.getDates().get(0)))) {			
 			callables.add(() -> {
 				SimpleTripSearchPackage<Map<String, Train>> searchPackage = new SimpleTripSearchPackage<>();
 				searchPackage.setSearchResult(new HashMap<>());
